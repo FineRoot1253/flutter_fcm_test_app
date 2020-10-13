@@ -1,0 +1,1 @@
+const MAIN_URL = "https://bizbooks.co.kr/bizbooks/m/";
