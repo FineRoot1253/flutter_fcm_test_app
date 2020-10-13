@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fcm_tet_01_1008/controller/http_controller.dart';
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -99,6 +101,8 @@ import 'package:get/get.dart';
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+  HttpController httpController = Get.put(HttpController());
+  WebViewController webViewController = Get.put(WebViewController());
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(

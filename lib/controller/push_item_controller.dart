@@ -9,10 +9,10 @@ class Item{
 
   StreamController<Item> _controller = StreamController<Item>.broadcast();
   Stream<Item> get onChanged => _controller.stream;
-  String _matchteam;
-  String get matchteam => _matchteam;
-  set matchteam(String value) {
-    _matchteam = value;
+  String _url;
+  String get url => _url;
+  set url(String value) {
+    _url = value;
     _controller.add(this);
   }
 
