@@ -213,12 +213,12 @@ class WebViewController extends GetxController {
   /// checkAndReLoadUrl(), fcm에서 링크가 보내지면 리로드 동작, 평소에는 URL변수가 null -> 체크후 return;
   /// fcm의 의해 새로운 링크가 추가되었는지 체크 -> 웹뷰 리로드 -> URL변수 null 초기화
   Future<void> checkAndReLoadUrl() async {
-    //FCM onResume callback & InAppWebView onLoadStart
-    //this.wvc=controller; -> 넣는 위치에 따라 필요여부 있음
-    //push notification or snackBar 에 의해 한번 거치게되면 receivedURL=null,
-    //세션스토리지 Null 유무로 로그인체크
-    //-> 재호출시 리로드가 되지 않아야 함
-    //receivedURL.isNull -> notification을 타고 왔는지 구분 가능
+    ///FCM onResume callback & InAppWebView onLoadStart
+    ///this.wvc=controller; -> 넣는 위치에 따라 필요여부 있음
+    ///push notification or snackBar 에 의해 한번 거치게되면 receivedURL=null,
+    ///세션스토리지 Null 유무로 로그인체크
+    ///-> 재호출시 리로드가 되지 않아야 함
+    ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
     print("세션 스토리지 : $ssItem\n받은 URL : $receivedURL");
     print("리로드 사용 여부 체크 : ${!ssItem.isNull} : ${!receivedURL.isNull}");
     if (!ssItem.isNull && !receivedURL.isNull && receivedURL!="/") {

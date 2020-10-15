@@ -12,76 +12,12 @@ import 'package:get/get.dart';
 /// flutterLocalNotificationsPlugin 플러그인, backgroundhandler 위치때문에 여기에 선언 초기화
 var flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   // This widget is the root of your application.
 
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  // final FirebaseMessaging fm = FirebaseMessaging();
-
   /// 미리 put을 해주어야 하위 위젯에서 편하게 to로 접근 가능함
-
-  HttpController httpController = Get.put(HttpController());
-  WebViewController webViewController = Get.put(WebViewController());
-  @override
-  void initState() {
-    // TODO: implement initState
-    // var initializationSettingsAndroid =
-    // AndroidInitializationSettings('@mipmap/ic_launcher');
-    // var initializationSettingsIOS = IOSInitializationSettings();
-    // var initializationSettings = InitializationSettings(
-    //   android: initializationSettingsAndroid,
-    //   iOS: initializationSettingsIOS,);
-    // flutterLocalNotificationsPlugin.initialize(initializationSettings,onSelectNotification:onSelectNotification);
-    //
-    //
-    // fm.requestNotificationPermissions(
-    //     const IosNotificationSettings(
-    //         sound: true, badge: true, alert: true, provisional: true));
-    // fm.onIosSettingsRegistered
-    //     .listen((IosNotificationSettings settings) {
-    //   print("Settings registered: $settings");
-    // });
-    //
-    // fm.configure(
-    //   onBackgroundMessage: myBackgroundMessageHandler,
-    //   onLaunch: (Map<String, dynamic> message) async {
-    //     print("onLaunch: $message");
-    //     WebViewController.to.showDialog(username: null ,message:message);
-    //     await WebViewController.to.checkAndReLoadUrl(WebViewController.to.wvc);
-    //   },
-    //   onResume: (Map<String, dynamic> message) async {
-    //     message = WebViewController.to.fixMessageTitleAndBody(message);
-    //     print("onResume: $message");
-    //     WebViewController.to.showDialog(username: null ,message:message);
-    //     await WebViewController.to.checkAndReLoadUrl(WebViewController.to.wvc);
-    //   },
-    //   onMessage: (Map<String, dynamic> message) async {
-    //     message = WebViewController.to.fixMessageTitleAndBody(message);
-    //     print("onMessage: $message");
-    //     WebViewController.to.showDialog(username: null ,message:message);
-    //     await WebViewController.to.checkAndReLoadUrl(WebViewController.to.wvc);
-    //   },
-    // );
-    //
-    // // 로그인시 토큰 전달, 저장 필요
-    // fm.getToken().then((String token) {
-    //   assert(token != null);
-    //   print("Push Messaging token: $token");
-    // });
-    // //_firebaseMessaging.subscribeToTopic()으로 미리 토픽을 fc쪽에 구독(등록)한다.
-    // fm.subscribeToTopic("ALL");
-    super.initState();
-  }
-
-  Future<void> onSelectNotification(String payload) async {
-    if (payload != null) {
-      debugPrint('notification payload: ' + payload);
-    }
-  }
+  final HttpController httpController = Get.put(HttpController());
+  final WebViewController webViewController = Get.put(WebViewController());
 
   @override
   Widget build(BuildContext context) {
@@ -137,8 +73,6 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   await flutterLocalNotificationsPlugin.show(msgId, message["data"]["title"],
       message["data"]["body"], platformChannelSpecifics,
       payload: message["data"]["URL"]);
-
-
 
     return Future<void>.value();
 }
