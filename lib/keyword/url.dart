@@ -1,1 +1,1 @@
-const MAIN_URL = "https://bizbooks.co.kr/bizbooks/m/";
+const MAIN_URL = "https://bizbooks.newzensolution.co.kr/bizbooks/m/";

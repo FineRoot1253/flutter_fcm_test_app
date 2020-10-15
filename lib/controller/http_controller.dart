@@ -3,6 +3,11 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
+
+/// 추후 만약  HTTP REQUEST를 보내야한다면 필요한 컨트롤러
+/// httpManager() -> 보낼 request 확인후 send
+/// checkError() -> request이후 response에 따라 오류체크
+
 class HttpController extends GetxController {
 
   static HttpController get to => Get.find();

@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
+import 'package:fcm_tet_01_1008/main.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,68 +8,132 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
-//TODO: item Getobs로 연결, 연결이후 변환까지 필요
 class WebViewController extends GetxController {
+
+  /// CV의 편한 연결을 위해 추가
   static WebViewController get to => Get.find();
 
+  /// FCM 연결용
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+
+  /// notification의 확장성을 위해 추가한 플러그인, FCM과 연동
+  final plugin = FlutterLocalNotificationsPlugin();
+
+  /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
-  //로그인 체크 변수, 로그인 환영 메시지 호출 여부
+  ///로그인 체크 변수, 로그인 환영 메시지 호출 여부
   bool isSignin = false;
 
+  /// 웹뷰의 웹뷰 컨트롤러, 쉬운 접근을 위해 여기에 선언
   InAppWebViewController wvc;
+
+  /// 세션 스토리지의 내용이 들어가는 링크드해쉬맵, 쉬운 접근을 위해 여기에 선언
   LinkedHashMap<String, dynamic> ssItem;
 
+  /// V -> C FM 접근용
   FirebaseMessaging get fm => _firebaseMessaging;
 
-  showDialog(
-          {@required String username,
-          @required Map<String, dynamic> message}) =>
-      _showItemDialog(username: username, message: message);
-
+  /// view에서 로그인, 로그아웃 체크용도
   checkSignin(String currentURL) => _checkSignin(currentURL);
 
-  //TODO: 이동 => true 반환, 반환시 urlOverloading 시켜야함 Webview 연동 필수
-  //TODO: 다이얼로그 이원화 필요, 로그인시 or 다른 업무 알람
-  //TODO: 현재 다이얼로그 -> Get.dialog 필요
-  //TODO: 모든 다이얼로그 -> 커스텀 스낵바로 변환
-  FlutterLocalNotificationsPlugin plugin;
+
+  /// view initstate에서 호출용
   initNotifications() async {
-    plugin = FlutterLocalNotificationsPlugin();
+    /// 아이콘은 미리 등록을 해두는 것이 좋음
+    /// 현재 미리 등록 되어있는 디폴트 아이콘 사용
     var initializationSettingsAndroid =
     AndroidInitializationSettings('@mipmap/ic_launcher');
-    var initializationSettingsIOS = IOSInitializationSettings(onDidReceiveLocalNotification:onDidReceiveLocalNotification);
+    var initializationSettingsIOS = IOSInitializationSettings();
     var initializationSettings = InitializationSettings(
-        android: initializationSettingsAndroid,iOS: initializationSettingsIOS);
-    await plugin.initialize(initializationSettings);
+        android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,);
+    await plugin.initialize(initializationSettings,onSelectNotification: onSelectNotification);
+
+    /// message = fixMessageTitleAndBody(message); 1)
+    /// fcm자체 버그로 인해 notification 속성이 비워져서 날라오기 때문에 필수
+    /// 이를 위해 필요한 정보는 모두 백에서 보낼때 data에 넣음
+    /// 따라서 data속성에 필요한 정보를 강제로 꺼내서 notification value에 넣어줘야함
+
+    fm.configure(
+      onLaunch: (Map<String, dynamic> message) async {
+        message = fixMessageTitleAndBody(message);  //1)
+        print("onLaunch: $message");
+        _showItemSnackBar(username: null ,message:message);
+        //webViewController.navigateDialog(message);
+        await checkAndReLoadUrl();
+      },
+      onResume: (Map<String, dynamic> message) async {
+        message = fixMessageTitleAndBody(message);  //1)
+        print("ㅁㄴㅇㄻㄴㅇㄻㄴㄻㄴㅇㄻㄴㄹ : onResume: $message");
+        await checkAndReLoadUrl();
+      },
+      onMessage: (Map<String, dynamic> message) async {
+        message = fixMessageTitleAndBody(message);  //1)
+        print("onMessage: $message");
+        _showItemSnackBar(username: null ,message:message);
+        await checkAndReLoadUrl();
+      },
+      /// main에 미리 선언 해둔 콜백 func
+      /// background에서 접근 권한이 없음
+      /// 빌드시 미리 이 핸들러를 TOP_LEVEL에 선언 OR static화 해두어야 isolate된 BackGround에서 접근 가능
+      onBackgroundMessage: myBackgroundMessageHandler,
+    );
+
+    //TODO: IOS를 위한 퍼미션, 현재 테스트 불가능 -> 맥OS 필요
+    fm.requestNotificationPermissions(
+        const IosNotificationSettings(
+            sound: true, badge: true, alert: true, provisional: true));
+
+    fm.onIosSettingsRegistered
+        .listen((IosNotificationSettings settings) {
+      print("Settings registered: $settings");
+    });
+    ///  로그인시 토큰 체크용, TODO: 추후 DB에 저장 필요
+    fm.getToken().then((String token) {
+      assert(token != null);
+      print("Push Messaging token: $token");
+    });
+    /// fm.subscribeToTopic()으로 미리 토픽을 fc쪽에 구독(등록)한다.
+    fm.subscribeToTopic("ALL");
   }
+
+  /// goto line 57
+  Map<String, dynamic> fixMessageTitleAndBody(Map<String, dynamic> message) {
+    if (!message.containsKey("notification")) {
+      message["notification"] = {};
+    }
+    if (!message["notification"].containsKey("title") && message["data"].containsKey("title")) {
+      message["notification"]["title"] = message["data"]["title"];
+    }
+    if (!message["notification"].containsKey("body") && message["data"].containsKey("body")) {
+      message["notification"]["body"] = message["data"]["body"];
+    }
+    return message;
+  }
+
+  /// display a dialog with the notification details, tap ok to go to another page
   Future<void> onDidReceiveLocalNotification(
       int id, String title, String body, String payload) async {
-    // display a dialog with the notification details, tap ok to go to another page
-
-  }
-  Future<void> showNotification(String title, String body) async {
-    print("ㅁㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄹ");
-    var android = AndroidNotificationDetails(
-        'fcm_default_channel', 'channelName', 'channelDescription',
-        fullScreenIntent: true,
-        priority: Priority.high,
-        importance: Importance.high,
-        visibility: NotificationVisibility.public);
-    var iOS = IOSNotificationDetails();
-    var platform = NotificationDetails(android: android, iOS: iOS);
-      await plugin
-         .show(0, "title", "body", platform, payload: "asdfasdf");
   }
 
-  void _showItemDialog(
+  /// payload 체크용
+  Future onSelectNotification(String payload) async {
+    print("페이로드 : $payload");
+  }
+
+  /// fc 메시지를 받아서 띄워주는 커스텀 스낵바
+  /// 확인 callback -> this.receivedURL = message["data"]["URL"];
+  ///                 checkAndReLoadUrl(this.wvc).then((_) => Get.back());
+  /// 닫기 callback ->                 Get.back();
+  ///TODO 추후 확장성을 위해 class화 필요
+  void _showItemSnackBar(
       {@required String username,
       @required Map<String, dynamic> message}) async {
     var titleStr;
     var bodyStr;
 
-    if(message.containsKey("data")) {
+    if(username.isNull) {
         titleStr = message["data"]["title"] ?? '알림';
         bodyStr = message["data"]["body"] ?? '';
     }
@@ -101,7 +166,7 @@ class WebViewController extends GetxController {
                       ? FlatButton(
                           onPressed: () {
                             this.receivedURL = message["data"]["URL"];
-                            checkAndReLoadUrl(this.wvc).then((_) => Get.back());
+                            checkAndReLoadUrl().then((_) => Get.back());
                           },
                           child: Text("확인"))
                       : Container(),
@@ -117,18 +182,18 @@ class WebViewController extends GetxController {
         ));
   }
 
+
   _checkSignin(String currentURL) {
+
+    ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
     if (!ssItem.isNull && !isSignin) {
       var username = ssItem["user"]["userNm"];
-      ////////////////////////////////////////////////////////////
-      //TODO: showDialog를 커스텀 스낵바로 교체후 showDialog로 교체할 것
-      _showItemDialog(message: null, username: username);
-      ////////////////////////////////////////////////////////////
+      _showItemSnackBar(message: null, username: username);
       isSignin = true;
     }
 
-    //로그아웃하는 중인지 체크, 로그아웃하는 url이면 로그아웃절차 시작
-    //!ssItem.isNull 으로 로그인상태 여부 체크
+    ///로그아웃하는 중인지 체크, 로그아웃하는 url이면 로그아웃절차 시작
+    ///!ssItem.isNull, 로그인상태 여부 체크
     if (currentURL.endsWith("/m/") && !ssItem.isNull) {
       ssItem = null;
       print("로그아웃 완료 : ${ssItem.isNull}");
@@ -136,9 +201,9 @@ class WebViewController extends GetxController {
     }
   }
 
-  //TODO: 현재 routing -> Get으로 변경 필요
-
-  Future<void> checkAndReLoadUrl(InAppWebViewController controller) async {
+  /// checkAndReLoadUrl(), fcm에서 링크가 보내지면 리로드 동작, 평소에는 URL변수가 null -> 체크후 return;
+  /// fcm의 의해 새로운 링크가 추가되었는지 체크 -> 웹뷰 리로드 -> URL변수 null 초기화
+  Future<void> checkAndReLoadUrl() async {
     //FCM onResume callback & InAppWebView onLoadStart
     //this.wvc=controller; -> 넣는 위치에 따라 필요여부 있음
     //push notification or snackBar 에 의해 한번 거치게되면 receivedURL=null,
