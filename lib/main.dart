@@ -134,23 +134,11 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
       android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
 
   /// 앞서 선언, 초기화 한 토대로 notification을 띄움
-  flutterLocalNotificationsPlugin.show(msgId, message["data"]["title"],
+  await flutterLocalNotificationsPlugin.show(msgId, message["data"]["title"],
       message["data"]["body"], platformChannelSpecifics,
-      payload: "asdfasdf");
+      payload: message["data"]["URL"]);
 
-  /// 리로드 체크
-  await controller.checkAndReLoadUrl();
 
-  return Future<void>.value();
+
+    return Future<void>.value();
 }
-
-// initNotifications() async {
-//   WebViewController webViewController = Get.put(WebViewController());
-//   var initializationSettingsAndroid =
-//   AndroidInitializationSettings('@mipmap/ic_launcher');
-//   var initializationSettingsIOS = IOSInitializationSettings();
-//   var initializationSettings = InitializationSettings(
-//     android: initializationSettingsAndroid,
-//     iOS: initializationSettingsIOS,);
-//   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-// }

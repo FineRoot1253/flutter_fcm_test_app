@@ -120,6 +120,15 @@ class WebViewController extends GetxController {
   /// payload 체크용
   Future onSelectNotification(String payload) async {
     print("페이로드 : $payload");
+
+    /// 받은 URL 업데이트
+    String res = payload ?? null;
+    if(!(res==null)) {
+      receivedURL = payload;
+      print("receivedURL 업로드");
+    }
+    /// 리로드 체크
+    await checkAndReLoadUrl();
   }
 
   /// fc 메시지를 받아서 띄워주는 커스텀 스낵바
@@ -210,11 +219,12 @@ class WebViewController extends GetxController {
     //세션스토리지 Null 유무로 로그인체크
     //-> 재호출시 리로드가 되지 않아야 함
     //receivedURL.isNull -> notification을 타고 왔는지 구분 가능
-
+    print("세션 스토리지 : $ssItem\n받은 URL : $receivedURL");
     print("리로드 사용 여부 체크 : ${!ssItem.isNull} : ${!receivedURL.isNull}");
-    if (!ssItem.isNull && !receivedURL.isNull) {
+    if (!ssItem.isNull && !receivedURL.isNull && receivedURL!="/") {
       await wvc.loadUrl(url: MAIN_URL + receivedURL);
       receivedURL = null;
+      print("receivedURL null 초기화");
     }
   }
 }
