@@ -4,6 +4,7 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WebViewPage extends StatefulWidget {
   @override
@@ -65,6 +66,11 @@ class _WebViewPageState extends State<WebViewPage> {
                     (controller, shouldOverrideUrlLoadingRequest) async {
                   var url = shouldOverrideUrlLoadingRequest.url;
                   var uri = Uri.parse(url);
+                  if(["tel"].contains(uri.scheme)){
+                    if(await canLaunch(url))
+                      await launch(url);
+                    return ShouldOverrideUrlLoadingAction.CANCEL;
+                  }
                   return ShouldOverrideUrlLoadingAction.ALLOW;
                   // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
                 },

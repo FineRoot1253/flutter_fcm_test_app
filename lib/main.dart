@@ -1,10 +1,8 @@
 import 'dart:async';
-
 import 'package:fcm_tet_01_1008/controller/http_controller.dart';
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -40,7 +38,10 @@ void main() async {
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   /// controller는 GET 특성상 TOP_LEVEL일 경우엔 그냥 put을 해주는 것이 맞음
   /// Get.put() -> C+V 연결, view에서 controller로 접근시 필수
-  WebViewController controller = Get.put(WebViewController());
+  WebViewController webViewController = Get.put(WebViewController());
+
+  /// comment는 controller에 기재됨
+  message = webViewController.fixMessageTitleAndBody(message);
 
   /// FC message 체크용
   print("myBackgroundMessageHandler message: $message");
@@ -49,8 +50,6 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   int msgId = int.tryParse(message["data"]["msgId"].toString()) ?? 0;
   print("msgId $msgId");
 
-  /// comment는 controller에 기재됨
-  message = controller.fixMessageTitleAndBody(message);
 
   /// 안드로이드용 체널 구성
   /// fullScreenIntent -> notificaiton 호출시 화면에 크게 띄움
@@ -62,6 +61,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
       fullScreenIntent: true,
       color: Colors.blue.shade800,
       importance: Importance.max,
+      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.high);
 
   /// 추후 IOS 테스트시 여기에도 추가를 해주어야 함, 현재는 default
@@ -73,6 +73,5 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   await flutterLocalNotificationsPlugin.show(msgId, message["data"]["title"],
       message["data"]["body"], platformChannelSpecifics,
       payload: message["data"]["URL"]);
-
     return Future<void>.value();
 }
