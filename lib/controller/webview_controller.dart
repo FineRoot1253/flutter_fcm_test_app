@@ -19,6 +19,23 @@ class WebViewController extends GetxController {
   /// notification의 확장성을 위해 추가한 플러그인, FCM과 연동
   final plugin = FlutterLocalNotificationsPlugin();
 
+  /// 안드로이드용 체널 구성
+  /// fullScreenIntent -> notificaiton 호출시 화면에 크게 띄움
+  /// color -> 색조정
+  /// importance -> notification 중요도
+  /// priority -> notification 우선도, 우선도에 따라 백그라운드 작동이 달라짐 유의할 것
+  var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'fcm_default_channel', 'your channel name', 'your channel description',
+      fullScreenIntent: true,
+      color: Colors.blue.shade800,
+      importance: Importance.max,
+      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
+      priority: Priority.high);
+
+  /// 추후 IOS 테스트시 여기에도 추가를 해주어야 함, 현재는 default
+  var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+  var platformChannelSpecifics;
+
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
@@ -49,7 +66,8 @@ class WebViewController extends GetxController {
         android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,);
     await plugin.initialize(initializationSettings,onSelectNotification: onSelectNotification);
-
+    platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
     /// message = fixMessageTitleAndBody(message); 1)
     /// fcm자체 버그로 인해 notification 속성이 비워져서 날라오기 때문에 필수
     /// 이를 위해 필요한 정보는 모두 백에서 보낼때 data에 넣음

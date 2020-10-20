@@ -70,7 +70,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
       android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
 
   /// 앞서 선언, 초기화 한 토대로 notification을 띄움
-  await flutterLocalNotificationsPlugin.show(msgId, message["data"]["title"],
+  await webViewController.plugin.show(msgId, message["data"]["title"],
       message["data"]["body"], platformChannelSpecifics,
       payload: message["data"]["URL"]);
     return Future<void>.value();

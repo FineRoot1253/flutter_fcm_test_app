@@ -1,6 +1,8 @@
 import 'package:fcm_tet_01_1008/controller/http_controller.dart';
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
@@ -41,6 +43,9 @@ class _WebViewPageState extends State<WebViewPage> {
               padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom),
               child: InAppWebView(
+                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
+                  new Factory<OneSequenceGestureRecognizer>(() => new EagerGestureRecognizer(),),
+                ].toSet(),
                 initialUrl: MAIN_URL,
                 initialOptions: InAppWebViewGroupOptions(
                     crossPlatform: InAppWebViewOptions(
