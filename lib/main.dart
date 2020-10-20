@@ -61,7 +61,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
       fullScreenIntent: true,
       color: Colors.blue.shade800,
       importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
+      largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
       priority: Priority.high);
 
   /// 추후 IOS 테스트시 여기에도 추가를 해주어야 함, 현재는 default

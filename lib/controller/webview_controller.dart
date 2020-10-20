@@ -9,7 +9,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
 class WebViewController extends GetxController {
-
   /// CV의 편한 연결을 위해 추가
   static WebViewController get to => Get.find();
 
@@ -28,6 +27,7 @@ class WebViewController extends GetxController {
       'fcm_default_channel', 'your channel name', 'your channel description',
       fullScreenIntent: true,
       color: Colors.blue.shade800,
+      ongoing: true,
       importance: Importance.max,
       largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.high);
@@ -42,6 +42,9 @@ class WebViewController extends GetxController {
   ///로그인 체크 변수, 로그인 환영 메시지 호출 여부
   bool isSignin = false;
 
+  ///onProgressChange가 2번 호출되는 문제로 중복 back 방지용
+  bool isLoadDone = false;
+
   /// 웹뷰의 웹뷰 컨트롤러, 쉬운 접근을 위해 여기에 선언
   InAppWebViewController wvc;
 
@@ -51,23 +54,35 @@ class WebViewController extends GetxController {
   /// V -> C FM 접근용
   FirebaseMessaging get fm => _firebaseMessaging;
 
+  ///progress indicator용 변수
+  double progress = 0;
+
   /// view에서 로그인, 로그아웃 체크용도
   checkSignin(String currentURL) => _checkSignin(currentURL);
 
+  ///progress 변경시 호출
+  progressChanged(double progress) => _progressChanged(progress);
+
+  ///로드 시작시 호출
+  Future progressDialog() => _progressDialog();
 
   /// view initstate에서 호출용
   initNotifications() async {
     /// 아이콘은 미리 등록을 해두는 것이 좋음
     /// 현재 미리 등록 되어있는 디폴트 아이콘 사용
     var initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/noti_icon');
     var initializationSettingsIOS = IOSInitializationSettings();
     var initializationSettings = InitializationSettings(
-        android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,);
-    await plugin.initialize(initializationSettings,onSelectNotification: onSelectNotification);
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    await plugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
     platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics, iOS: iOSPlatformChannelSpecifics);
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics);
+
     /// message = fixMessageTitleAndBody(message); 1)
     /// fcm자체 버그로 인해 notification 속성이 비워져서 날라오기 때문에 필수
     /// 이를 위해 필요한 정보는 모두 백에서 보낼때 data에 넣음
@@ -75,23 +90,24 @@ class WebViewController extends GetxController {
 
     fm.configure(
       onLaunch: (Map<String, dynamic> message) async {
-        message = fixMessageTitleAndBody(message);  //1)
+        message = fixMessageTitleAndBody(message); //1)
         print("onLaunch: $message");
-        _showItemSnackBar(username: null ,message:message);
+        _showItemSnackBar(username: null, message: message);
         //webViewController.navigateDialog(message);
         await checkAndReLoadUrl();
       },
       onResume: (Map<String, dynamic> message) async {
-        message = fixMessageTitleAndBody(message);  //1)
+        message = fixMessageTitleAndBody(message); //1)
         print("ㅁㄴㅇㄻㄴㅇㄻㄴㄻㄴㅇㄻㄴㄹ : onResume: $message");
         await checkAndReLoadUrl();
       },
       onMessage: (Map<String, dynamic> message) async {
-        message = fixMessageTitleAndBody(message);  //1)
+        message = fixMessageTitleAndBody(message); //1)
         print("onMessage: $message");
-        _showItemSnackBar(username: null ,message:message);
+        _showItemSnackBar(username: null, message: message);
         await checkAndReLoadUrl();
       },
+
       /// main에 미리 선언 해둔 콜백 func
       /// background에서 접근 권한이 없음
       /// 빌드시 미리 이 핸들러를 TOP_LEVEL에 선언 OR static화 해두어야 isolate된 BackGround에서 접근 가능
@@ -99,21 +115,52 @@ class WebViewController extends GetxController {
     );
 
     //TODO: IOS를 위한 퍼미션, 현재 테스트 불가능 -> 맥OS 필요
-    fm.requestNotificationPermissions(
-        const IosNotificationSettings(
-            sound: true, badge: true, alert: true, provisional: true));
+    fm.requestNotificationPermissions(const IosNotificationSettings(
+        sound: true, badge: true, alert: true, provisional: true));
 
-    fm.onIosSettingsRegistered
-        .listen((IosNotificationSettings settings) {
+    fm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
       print("Settings registered: $settings");
     });
+
     ///  로그인시 토큰 체크용, TODO: 추후 DB에 저장 필요
     fm.getToken().then((String token) {
       assert(token != null);
       print("Push Messaging token: $token");
     });
+
     /// fm.subscribeToTopic()으로 미리 토픽을 fc쪽에 구독(등록)한다.
     fm.subscribeToTopic("ALL");
+  }
+
+  ///progress 변경시 콜백
+  _progressChanged(double progress) {
+    this.progress = progress;
+    print("변경완료 : ${this.progress}");
+
+    update();
+
+    if(progress==1.0&&!this.isLoadDone){
+      print("뒤로 가시오");
+      this.isLoadDone=true;
+      this.progress=0;
+      Get.back();
+    }
+  }
+
+   _progressDialog() {
+    print(this.progress);
+    return Get.defaultDialog(
+      barrierDismissible: false,
+        title: 'Loading...',
+        content: GetBuilder<WebViewController>(builder: (_) {
+         return (this.progress<1.0)? Center(
+            child: CircularProgressIndicator(
+              value: this.progress,
+            ),
+          ) : Center(
+            child: Text("완료"),
+          );
+        }));
   }
 
   /// goto line 57
@@ -121,10 +168,12 @@ class WebViewController extends GetxController {
     if (!message.containsKey("notification")) {
       message["notification"] = {};
     }
-    if (!message["notification"].containsKey("title") && message["data"].containsKey("title")) {
+    if (!message["notification"].containsKey("title") &&
+        message["data"].containsKey("title")) {
       message["notification"]["title"] = message["data"]["title"];
     }
-    if (!message["notification"].containsKey("body") && message["data"].containsKey("body")) {
+    if (!message["notification"].containsKey("body") &&
+        message["data"].containsKey("body")) {
       message["notification"]["body"] = message["data"]["body"];
     }
     return message;
@@ -132,8 +181,7 @@ class WebViewController extends GetxController {
 
   /// display a dialog with the notification details, tap ok to go to another page
   Future<void> onDidReceiveLocalNotification(
-      int id, String title, String body, String payload) async {
-  }
+      int id, String title, String body, String payload) async {}
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
@@ -141,10 +189,11 @@ class WebViewController extends GetxController {
 
     /// 받은 URL 업데이트
     String res = payload ?? null;
-    if(!(res==null)) {
+    if (!(res == null)) {
       receivedURL = payload;
       print("receivedURL 업로드");
     }
+
     /// 리로드 체크
     await checkAndReLoadUrl();
   }
@@ -160,9 +209,9 @@ class WebViewController extends GetxController {
     var titleStr;
     var bodyStr;
 
-    if(username.isNull) {
-        titleStr = message["data"]["title"] ?? '알림';
-        bodyStr = message["data"]["body"] ?? '';
+    if (username.isNull) {
+      titleStr = message["data"]["title"] ?? '알림';
+      bodyStr = message["data"]["body"] ?? '';
     }
 
     // await
@@ -209,11 +258,11 @@ class WebViewController extends GetxController {
         ));
   }
 
-
   _checkSignin(String currentURL) {
-
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
-    if (!ssItem.isNull && !isSignin) {
+    print("검사 가능 확인 : ${this.progress==0}");
+    if (!ssItem.isNull && !isSignin&&this.progress==0) {
+      print("환영메시지 호출");
       var username = ssItem["user"]["userNm"];
       _showItemSnackBar(message: null, username: username);
       isSignin = true;
@@ -239,7 +288,7 @@ class WebViewController extends GetxController {
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
     print("세션 스토리지 : $ssItem\n받은 URL : $receivedURL");
     print("리로드 사용 여부 체크 : ${!ssItem.isNull} : ${!receivedURL.isNull}");
-    if (!ssItem.isNull && !receivedURL.isNull && receivedURL!="/") {
+    if (!ssItem.isNull && !receivedURL.isNull && receivedURL != "/") {
       await wvc.loadUrl(url: MAIN_URL + receivedURL);
       receivedURL = null;
       print("receivedURL null 초기화");
