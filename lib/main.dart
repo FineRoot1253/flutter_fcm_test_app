@@ -1,15 +1,10 @@
 import 'dart:async';
 import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
-import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-
-/// flutterLocalNotificationsPlugin 플러그인, backgroundhandler 위치때문에 여기에 선언 초기화
-var flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -34,6 +29,9 @@ void main() async {
 
 /// TOP_Level BackgroundMessageHandler
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
+
+  /// 여기에서 한번 더 flutter_local_notification인스턴스에 접근할 필요가 있어서
+  /// flutter_local_notification을 싱글톤화 해야했다.
   final flnApiInstance = FLNApi();
 
   /// notification ID

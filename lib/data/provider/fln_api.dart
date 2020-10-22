@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -31,6 +29,9 @@ class FLNApi{
     var _initializationSettingsAndroid;
     var _initializationSettingsIOS;
 
+
+    ///여기에서 local_notification을 초기화한다.
+    ///이 메서드는 webviewinit 메서드쪽에서 호출해서 사용될 용도이다.
     void initFLN() {
 
       _initializationSettingsAndroid =

@@ -3,7 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 class HttpApi{
-
+  ///API파일은 모델에 따라 변형되어야할 필요가 있다.
+  ///이 파일도 마찬가지로 변형되어야한다.
   final http.Client httpClient;
   HttpApi({@required this.httpClient});
 

@@ -2,6 +2,8 @@ import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+/// 여기에 전역으로 사용할 필요한 스낵바들을 정의
+
 /// fc 메시지를 받아서 띄워주는 커스텀 스낵바
 /// 확인 callback -> this.receivedURL = message["data"]["URL"];
 ///                 checkAndReLoadUrl(this.wvc).then((_) => Get.back());

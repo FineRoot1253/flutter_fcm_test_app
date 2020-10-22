@@ -4,6 +4,8 @@ import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+///여기에 전역으로 사용할 다이얼로그들을 정의
+
 progressDialog() {
   return Get.defaultDialog(
       barrierDismissible: false,
