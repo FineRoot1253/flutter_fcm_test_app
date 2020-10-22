@@ -1,16 +1,11 @@
 import 'dart:convert';
-
-import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
+class HttpApi{
 
-/// 추후 만약  HTTP REQUEST를 보내야한다면 필요한 컨트롤러
-/// httpManager() -> 보낼 request 확인후 send
-/// checkError() -> request이후 response에 따라 오류체크
-
-class HttpController extends GetxController {
-
-  static HttpController get to => Get.find();
+  final http.Client httpClient;
+  HttpApi({@required this.httpClient});
 
   httpManager(String method, String url, [Map<String, dynamic> body]) async{
 
@@ -20,10 +15,25 @@ class HttpController extends GetxController {
       case "GET":
         response = await http.get(url);
         break;
-      case "DELETE":break;
-      case "POST":break;
-      case "PATCH":break;
-      case "PUT":break;
+      case "DELETE":
+        response =
+        await http.delete(url);
+        break;
+      case "POST":
+        if (url.endsWith("login") || url.endsWith("register"))
+          response = await http.post(url,
+              headers: {"Content-Type": "application/json"},
+              body: jsonEncode(body),
+              encoding: Encoding.getByName("utf-8"));
+        else
+          response = await http.post(url, body: body);
+        break;
+      case "PATCH":
+        response = await http.patch(url, body: body);
+        break;
+      case "PUT":
+        response = await http.put(url, body: body);
+        break;
     }
 
     return await checkError(response, url);
@@ -58,5 +68,7 @@ class HttpController extends GetxController {
         return "Error";
     }
   }
-
+/// 추후에 쿠키를 저장하거나 하는 일이 존재한다면
+/// hive같은 자체 DB에 저장을 시켜야 함
+/// 그런 메서드를 를 추후에 이곳에 위치 시킬것
 }
