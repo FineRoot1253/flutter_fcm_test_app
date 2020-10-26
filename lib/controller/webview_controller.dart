@@ -1,14 +1,11 @@
 import 'dart:collection';
 import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
-import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
-import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
 class WebViewController extends GetxController {
@@ -21,12 +18,7 @@ class WebViewController extends GetxController {
 
 
   /// API 연결
-  final flnApiInstance = FLNApi();
   final fcmApiInstance = FCMApi();
-
-
-  /// notification의 확장성을 위해 추가한 플러그인, FCM과 연동
-  final plugin = FlutterLocalNotificationsPlugin();
 
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
@@ -57,9 +49,6 @@ class WebViewController extends GetxController {
 
   /// view initstate에서 호출용
   initNotifications() async {
-    flnApiInstance.initFLN();
-    await flnApiInstance.flnPlugin.initialize(flnApiInstance.initializationSettings,
-        onSelectNotification: onSelectNotification);
     fcmApiInstance.fcmPlugin.configure(
       onLaunch: _onFCMReceived,
       onResume: _onFCMReceived,
@@ -68,7 +57,8 @@ class WebViewController extends GetxController {
       /// main에 미리 선언 해둔 콜백 func
       /// background에서 접근 권한이 없음
       /// 빌드시 미리 이 핸들러를 TOP_LEVEL에 선언 OR static화 해두어야 isolate된 BackGround에서 접근 가능
-      onBackgroundMessage: myBackgroundMessageHandler,
+      /// 현 상황에서 사용불가
+      // onBackgroundMessage: myBackgroundMessageHandler,
     );
     fcmApiInstance.fcmInitialize();
 
@@ -76,17 +66,18 @@ class WebViewController extends GetxController {
     fcmApiInstance.fcmPlugin.getToken().then((String token) {
       assert(token != null);
       print("Push Messaging token: $token");
+      print("token length : ${token.length}");
       this.deviceToken=token;
     });
   }
 
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
-    message = fixMessageTitleAndBody(message); //1)
    showItemSnackBar(username: null, message: message);
     await checkAndReLoadUrl();
   }
   Future<dynamic> _onFCMReceived(Map<String, dynamic> message) async {
-    message = fixMessageTitleAndBody(message); //1)
+    print("\n\n\n\n\n\n\n\n\n\nonResume : $message\n\n\n\n\n\n\n\n\n");
+    onSelectNotification(message["data"]["URL"]);
     await checkAndReLoadUrl();
   }
 
@@ -101,24 +92,6 @@ class WebViewController extends GetxController {
       this.progress=0;
       Get.back();
     }
-  }
-
-
-
-  /// goto line 57
-  Map<String, dynamic> fixMessageTitleAndBody(Map<String, dynamic> message) {
-    if (!message.containsKey("notification")) {
-      message["notification"] = {};
-    }
-    if (!message["notification"].containsKey("title") &&
-        message["data"].containsKey("title")) {
-      message["notification"]["title"] = message["data"]["title"];
-    }
-    if (!message["notification"].containsKey("body") &&
-        message["data"].containsKey("body")) {
-      message["notification"]["body"] = message["data"]["body"];
-    }
-    return message;
   }
 
   /// payload 체크용

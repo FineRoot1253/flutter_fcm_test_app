@@ -2,7 +2,6 @@ package com.example.fcm_tet_01_1008;
 
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin;
-import com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin;
 
 public final class FirebaseCloudMessagingPluginRegistrant{
     public static void registerWith(PluginRegistry registry) {
@@ -10,7 +9,6 @@ public final class FirebaseCloudMessagingPluginRegistrant{
             return;
         }
         FirebaseMessagingPlugin.registerWith(registry.registrarFor("io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin"));
-        FlutterLocalNotificationsPlugin.registerWith(registry.registrarFor("com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin"));
     }
 
     private static boolean alreadyRegisteredWith(PluginRegistry registry) {

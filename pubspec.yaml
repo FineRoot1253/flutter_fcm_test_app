@@ -35,7 +35,6 @@ dependencies:
   url_launcher: ^5.7.2
   http: ^0.12.2
   get: ^3.13.2
-  flutter_local_notifications: ^2.0.0+1
   image: ^2.1.18
 
 dev_dependencies:
