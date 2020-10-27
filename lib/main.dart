@@ -1,7 +1,9 @@
 import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
+import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
 
@@ -34,11 +36,29 @@ void main() async {
 
 /// TOP_Level BackgroundMessageHandler
 /// 현 상황에서 사용 불가
-// Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
-//   print("\n\n\n\nonbackground : $message\n\n\n\n");
-//   // showItemSnackBar(username: null, message: message);
-//   // /// 여기에서 한번 더 flutter_local_notification인스턴스에 접근할 필요가 있어서
-//   // /// flutter_local_notification을 싱글톤화 해야했다.
-//
-//   return Future<void>.value();
-// }
+Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
+
+  /// 여기에서 한번 더 flutter_local_notification인스턴스에 접근할 필요가 있어서
+  /// flutter_local_notification을 싱글톤화 해야했다.
+  final flnApiInstance = FLNApi();
+  var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'fcm_default_channel', 'your channel name', 'your channel description',
+      fullScreenIntent: true,
+      color: Colors.blue.shade800,
+      importance: Importance.max,
+      largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
+      priority: Priority.high);
+  var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
+
+  var _platformChannelSpecifics = NotificationDetails(
+      android: _androidPlatformChannelSpecifics,
+      iOS: _iOSPlatformChannelSpecifics);
+  /// notification ID
+  int msgId = int.tryParse(message["data"]["msgId"].toString()) ?? 0;
+  print("msgId $msgId");
+  /// 앞서 선언, 초기화 한 토대로 notification을 띄움
+  await flnApiInstance.flnPlugin.show(msgId, message["data"]["title"],
+      message["data"]["body"], _platformChannelSpecifics,
+      payload: message["data"]["URL"]);
+  return Future<void>.value();
+}
