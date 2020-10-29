@@ -67,11 +67,8 @@ class _WebViewPageState extends State<WebViewPage> {
                     int progress) {
 
                   /// webViewController.isLoadDone은 다이얼로그 중복 Get.back() 을 방지
-                  /// TODO 로딩창 구현 (기능개발) 레드마인에 올리기
-                  if (!webViewController.isLoadDone)
-                    webViewController.progressChanged((progress / 100));
-                  else
-                    webViewController.isLoadDone = false;
+                      webViewController.progressChanged((progress / 100));
+
                 },
                 onLoadStart:
                     (InAppWebViewController controller, String url) async {
@@ -107,9 +104,12 @@ class _WebViewPageState extends State<WebViewPage> {
                   if(ajaxRequest.method=="POST"&&ajaxRequest.url=="/bizbooks/login/loginProc") {
                     print("\n\n\n\n\n\n\n인터셉트 완료 : ${ajaxRequest
                         .toString()} \n\n\n\n\n\n\n");
-                    var data = ajaxRequest.data;
+                    String data = ajaxRequest.data;
                     print("data : $data, datatype : ${data.runtimeType}");
-                    ajaxRequest.data = data+"&deviceToken=${webViewController.deviceToken}";
+                    if(data.endsWith("procType=5"))
+                      data = 'compCd='+webViewController.compID+"&procType=5";
+                    else
+                      ajaxRequest.data = data+"&devToken=${webViewController.deviceToken}";
                     print("\n\n\n\n\n\n\n ajaxRequest Checking : ${ajaxRequest
                         .toString()} \n\n\n\n\n\n\n");
                   }
@@ -117,6 +117,7 @@ class _WebViewPageState extends State<WebViewPage> {
                   return ajaxRequest;
                 },
                 onAjaxProgress: (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
+                  /// TODO: 1029  여기서 인터셉트 처리하게 수정
                   if (ajaxRequest.event.type == AjaxRequestEventType.LOAD) {
                     Map<String, Object> res = ajaxRequest.response;
                     print("response : $res + ajaxRequest body : ${ajaxRequest.data}");

@@ -1,5 +1,6 @@
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 /// 여기에 전역으로 사용할 필요한 스낵바들을 정의
@@ -9,9 +10,12 @@ import 'package:get/get.dart';
 ///                 checkAndReLoadUrl(this.wvc).then((_) => Get.back());
 /// 닫기 callback ->                 Get.back();
 
+
 void showItemSnackBar(
     {@required String username,
-      @required Map<String, dynamic> message}) async {
+      @required Map<String, dynamic> message,
+      @required WebViewController controller
+    }) async {
 
   var titleStr;
   var bodyStr;
@@ -20,7 +24,6 @@ void showItemSnackBar(
     titleStr = message["data"]["title"] ?? '알림';
     bodyStr = message["data"]["body"] ?? '';
   }
-
   // await
   Get.snackbar("", "",
       isDismissible: false,
@@ -37,27 +40,47 @@ void showItemSnackBar(
         padding: const EdgeInsets.only(top: 30.0),
         margin: const EdgeInsets.only(bottom: 30.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            (username.isNull) ? Text("$bodyStr") : Container(),
+            (username.isNull) ? Padding(
+              padding: const EdgeInsets.only(bottom:15.0),
+              child: Text("$bodyStr"),
+            ) : Container(),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 (username.isNull)
-                    ? FlatButton(
-                    onPressed: () {
-                      WebViewController.to.receivedURL = message["data"]["URL"];
-                      WebViewController.to.checkAndReLoadUrl().then((_) => Get.back());
-                    },
-                    child: Text("확인"))
+                    ? Container(
+                  margin: const EdgeInsets.all(10.0),
+                      child: OutlineButton(
+                  color: Colors.blue,
+                shape: StadiumBorder(),
+                      borderSide: BorderSide(color: Colors.blue, style: BorderStyle.solid,width: 1),
+                      onPressed: () {
+                        WebViewController.to.receivedURL = message["data"]["URL"];
+                        if(WebViewController.to.receivedURL.isNotEmpty&&!WebViewController.to.receivedURL.isNull){
+                          List<String> paths = WebViewController.to.receivedURL.split('/');
+                          WebViewController.to.compID=paths[paths.length-1];
+                          WebViewController.to.receivedURL = WebViewController.to.receivedURL.substring(0,WebViewController.to.receivedURL.indexOf('compID')) ?? null;
+                        }
+                        WebViewController.to.checkAndReLoadUrl().then((_) => Get.back());
+                      },
+                      child: Text("확인",style: TextStyle(color: Colors.blue))),
+                    )
                     : Container(),
-                FlatButton(
-                    onPressed: () {
-                      Get.back();
-                    },
-                    child: Text("닫기"))
+                Container(
+                  margin: const EdgeInsets.all(10.0),
+                  child: OutlineButton(
+                      color: Colors.blue,
+                      shape: StadiumBorder(),
+                      borderSide: BorderSide(color: Colors.blue, style: BorderStyle.solid,width: 1),
+                      onPressed: () {
+                        Get.back();
+                      },
+                      child: Text("닫기",style: TextStyle(color: Colors.blue),)),
+                )
               ],
             ),
           ],

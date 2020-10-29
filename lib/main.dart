@@ -7,18 +7,15 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
 
-
 class MyApp extends StatelessWidget with WidgetsBindingObserver {
   // This widget is the root of your application.
-
-
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
       initialBinding: WebViewBinding(),
-      title:'Flutter Demo',
-      home:WebViewPage(),
+      title: 'Flutter Demo',
+      home: WebViewPage(),
       getPages: routes,
     );
   }
@@ -32,8 +29,6 @@ void main() async {
   runApp(MyApp());
 }
 
-
-
 /// TOP_Level BackgroundMessageHandler
 /// 현 상황에서 사용 불가
 Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
@@ -42,10 +37,10 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   /// flutter_local_notification을 싱글톤화 해야했다.
   final flnApiInstance = FLNApi();
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'fcm_default_channel', 'your channel name', 'your channel description',
+      'fcm_default_channel', '비즈북스', '알람설정',
       fullScreenIntent: true,
       color: Colors.blue.shade800,
-      importance: Importance.max,
+      importance: Importance.high,
       largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
       priority: Priority.high);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
@@ -53,12 +48,16 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   var _platformChannelSpecifics = NotificationDetails(
       android: _androidPlatformChannelSpecifics,
       iOS: _iOSPlatformChannelSpecifics);
+
   /// notification ID
   int msgId = int.tryParse(message["data"]["msgId"].toString()) ?? 0;
   print("msgId $msgId");
+
   /// 앞서 선언, 초기화 한 토대로 notification을 띄움
   await flnApiInstance.flnPlugin.show(msgId, message["data"]["title"],
       message["data"]["body"], _platformChannelSpecifics,
       payload: message["data"]["URL"]);
+
+
   return Future<void>.value();
 }

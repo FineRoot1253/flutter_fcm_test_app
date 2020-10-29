@@ -11,6 +11,7 @@ progressDialog() {
       barrierDismissible: false,
       title: 'Loading...',
       content: GetBuilder<WebViewController>(builder: (_) {
+        if(Get.routing.route.isCurrent&&_.progress<0) Get.back();
         return (_.progress<1.0)? Center(
           child: CircularProgressIndicator(
             value: _.progress,

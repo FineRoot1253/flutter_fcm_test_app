@@ -19,10 +19,10 @@ class FLNApi{
   get flnPlugin => this._flnPlugin;
 
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'fcm_default_channel', 'your channel name', 'your channel description',
+      'fcm_default_channel', '비즈북스', '알람설정',
       fullScreenIntent: true,
       color: Colors.blue.shade800,
-      importance: Importance.max,
+      importance: Importance.high,
       largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
       priority: Priority.high);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
