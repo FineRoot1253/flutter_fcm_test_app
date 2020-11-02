@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import 'package:get/get_navigation/src/dialog/dialog_route.dart';
+
 /// 여기에 전역으로 사용할 필요한 스낵바들을 정의
 
 /// fc 메시지를 받아서 띄워주는 커스텀 스낵바
@@ -24,66 +26,80 @@ void showItemSnackBar(
     titleStr = message["data"]["title"] ?? '알림';
     bodyStr = message["data"]["body"] ?? '';
   }
-  // await
+
   Get.snackbar("", "",
-      isDismissible: false,
-      titleText: Text(
-        (username.isNull) ? "$titleStr" : "어서오세요 $username님",
-        textAlign: TextAlign.center,
-      ),
-      backgroundColor: Colors.white,
-      borderWidth: 10.0,
-      borderColor: Colors.white,
-      borderRadius: 30.0,
-      duration: Duration(seconds: 5),
-      messageText: Container(
-        padding: const EdgeInsets.only(top: 30.0),
-        margin: const EdgeInsets.only(bottom: 30.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            (username.isNull) ? Padding(
-              padding: const EdgeInsets.only(bottom:15.0),
-              child: Text("$bodyStr"),
-            ) : Container(),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
+          isDismissible: false,
+          titleText: Text(
+            (username.isNull) ? "$titleStr" : "어서오세요 $username님",
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.white,
+          borderWidth: 10.0,
+          borderColor: Colors.white,
+          borderRadius: 30.0,
+          duration: Duration(seconds: 5),
+          messageText: Container(
+            padding: const EdgeInsets.only(top: 30.0),
+            margin: const EdgeInsets.only(bottom: 30.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                (username.isNull)
-                    ? Container(
-                  margin: const EdgeInsets.all(10.0),
+                (username.isNull) ? Padding(
+                  padding: const EdgeInsets.only(bottom: 15.0),
+                  child: Text("$bodyStr"),
+                ) : Container(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    (username.isNull)
+                        ? Container(
+                      margin: const EdgeInsets.all(10.0),
                       child: OutlineButton(
-                  color: Colors.blue,
-                shape: StadiumBorder(),
-                      borderSide: BorderSide(color: Colors.blue, style: BorderStyle.solid,width: 1),
-                      onPressed: () {
-                        WebViewController.to.receivedURL = message["data"]["URL"];
-                        if(WebViewController.to.receivedURL.isNotEmpty&&!WebViewController.to.receivedURL.isNull){
-                          List<String> paths = WebViewController.to.receivedURL.split('/');
-                          WebViewController.to.compID=paths[paths.length-1];
-                          WebViewController.to.receivedURL = WebViewController.to.receivedURL.substring(0,WebViewController.to.receivedURL.indexOf('compID')) ?? null;
-                        }
-                        WebViewController.to.checkAndReLoadUrl().then((_) => Get.back());
-                      },
-                      child: Text("확인",style: TextStyle(color: Colors.blue))),
+                          color: Colors.blue,
+                          shape: StadiumBorder(),
+                          borderSide: BorderSide(color: Colors.blue,
+                              style: BorderStyle.solid,
+                              width: 1),
+                          onPressed: () {
+                            WebViewController.to.receivedURL =
+                            message["data"]["URL"];
+                            if (WebViewController.to.receivedURL.isNotEmpty &&
+                                !WebViewController.to.receivedURL.isNull) {
+                              List<String> paths = WebViewController.to
+                                  .receivedURL.split('/');
+                              WebViewController.to.compID =
+                              paths[paths.length - 1].split("=")[1];
+                              WebViewController.to.receivedURL =
+                                  WebViewController.to.receivedURL.substring(
+                                      0, WebViewController.to.receivedURL.indexOf(
+                                      'compID')) ?? null;
+                            }
+                            WebViewController.to.checkAndReLoadUrl().then((_) =>
+                                Get.back());
+                          },
+                          child: Text(
+                              "확인", style: TextStyle(color: Colors.blue))),
                     )
-                    : Container(),
-                Container(
-                  margin: const EdgeInsets.all(10.0),
-                  child: OutlineButton(
-                      color: Colors.blue,
-                      shape: StadiumBorder(),
-                      borderSide: BorderSide(color: Colors.blue, style: BorderStyle.solid,width: 1),
-                      onPressed: () {
-                        Get.back();
-                      },
-                      child: Text("닫기",style: TextStyle(color: Colors.blue),)),
-                )
+                        : Container(),
+                    Container(
+                      margin: const EdgeInsets.all(10.0),
+                      child: OutlineButton(
+                          color: Colors.blue,
+                          shape: StadiumBorder(),
+                          borderSide: BorderSide(color: Colors.blue,
+                              style: BorderStyle.solid,
+                              width: 1),
+                          onPressed: () {
+                            Get.back();
+                          },
+                          child: Text(
+                            "닫기", style: TextStyle(color: Colors.blue),)),
+                    )
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ));
+          ));
 }

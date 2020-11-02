@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:typed_data';
 import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
 import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
@@ -53,6 +54,9 @@ class WebViewController extends GetxController {
   /// progress indicator용 변수
   double progress = 0;
 
+  /// snackbar 중복 방지용 변수
+  bool isDialogDone = true;
+
   /// 토큰 재발급 처리용 변수
   /// 토큰은 다음과 같은 상황에 자동으로 재발급된다.
   /// 1) deleteInstanceID를 호출할 때
@@ -102,26 +106,23 @@ class WebViewController extends GetxController {
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
     print("\n\n\n\n\n\n\n\n\n\nonMessage : $message\n\n\n\n\n\n\n\n\n");
-      showItemSnackBar(username: null, message: message);
-    await checkAndReLoadUrl();
+        showItemSnackBar(username: null, message: message);
+
+    // await checkAndReLoadUrl();
   }
 
   /// Resume + Launch 용 콜백
   Future<dynamic> _onFCMReceived(Map<String, dynamic> message) async {
     print("\n\n\n\n\n\n\n\n\n\nonResume : $message\n\n\n\n\n\n\n\n\n");
-    await checkAndReLoadUrl();
+    // await checkAndReLoadUrl();
   }
 
   ///progress 변경시 콜백
   _progressChanged(double progress) {
-
-    this.progress = progress;
-
-    /// 화면 리프레쉬
+    print(progress);
+    this.progress=progress;
     update();
-
-    if(progress==1.0) this.progress=-1;
-
+    // if(progress==(1.0).obs) this.rxProgress=0.toDouble().obs;
   }
 
   /// payload 체크용
@@ -129,11 +130,10 @@ class WebViewController extends GetxController {
     print("URL체크 : $payload");
 
     /// 받은 URL 업데이트
-    if(payload.isNotEmpty&&!payload.isNull){
-      List<String> paths = payload.split('/');
-      compID=paths[paths.length];
-      receivedURL = payload.substring(0,payload.indexOf('compID')) ?? null;
-    }
+    List<String> paths = payload.split('/');
+    compID=paths[paths.length-1].split("=")[1];
+    receivedURL = payload.substring(0,payload.indexOf('compID')) ?? null;
+    print("업데이트 완료 ) receivedURL : $receivedURL, receivedURL :  $compID");
 
     /// 리로드 체크
     await checkAndReLoadUrl();
@@ -144,7 +144,9 @@ class WebViewController extends GetxController {
 
   _checkSignin(String currentURL) {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
-    if (!ssItem.isNull && !isSignin&&this.progress==-1) {
+    ///&&this.progress==-1 && !ssItem.isNull
+
+    if (!ssItem.isNull && !isSignin) {
       var username = ssItem["user"]["userNm"];
       showItemSnackBar(message: null, username: username);
       isSignin = true;
@@ -167,8 +169,16 @@ class WebViewController extends GetxController {
     ///세션스토리지 Null 유무로 로그인체크
     ///-> 재호출시 리로드가 되지 않아야 함
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
+    print("${!ssItem.isNull} : ${!receivedURL.isNull} : ${receivedURL != "/"}");
     if (!ssItem.isNull && !receivedURL.isNull && receivedURL != "/") {
-      print(receivedURL);
+      // print(receivedURL+compID);
+      // if(receivedURL.endsWith("/dashboard/")) {
+      //   await wvc.postUrl(url: "/bizbooks/login/loginProc",
+      //       postData: Uint8List.fromList(
+      //           ('compCd=' + compID + "&procType=5").codeUnits)).then((value) =>
+      //       print("재로그인 완료"));
+      //       compID = null;
+      // }
       await wvc.loadUrl(url: MAIN_URL + receivedURL);
       receivedURL = null;
     }

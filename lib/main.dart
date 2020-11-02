@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 
-
+int _msgId=0;
 class MyApp extends StatelessWidget with WidgetsBindingObserver {
   // This widget is the root of your application.
 
@@ -38,11 +38,12 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   final flnApiInstance = FLNApi();
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
+      // channelAction: AndroidNotificationChannelAction.update,
       fullScreenIntent: true,
       color: Colors.blue.shade800,
-      importance: Importance.high,
+      importance: Importance.max,
       largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
-      priority: Priority.high);
+      priority: Priority.max);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
 
   var _platformChannelSpecifics = NotificationDetails(
@@ -57,7 +58,7 @@ Future<dynamic> myBackgroundMessageHandler(Map<String, dynamic> message) async {
   await flnApiInstance.flnPlugin.show(msgId, message["data"]["title"],
       message["data"]["body"], _platformChannelSpecifics,
       payload: message["data"]["URL"]);
-
+print("_msgId $_msgId");
 
   return Future<void>.value();
 }
