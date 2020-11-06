@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/foundation.dart';
@@ -24,8 +26,15 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   @override
+  void dispose() {
+    // TODO: implement dispose
+    webViewController.streamController.close();
+    webViewController.ajaxStreamSubScription.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    print(Get.routing.route.settings.name);
     return SafeArea(
       top: true,
       child: Scaffold(
@@ -45,27 +54,11 @@ class _WebViewPageState extends State<WebViewPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   GetBuilder<WebViewController>(
-                    builder: (_){
-
-                      return (webViewController.progress<1.0)
+                    builder: (_) =>
+                       (webViewController.progress<1.0)
                           ? LinearProgressIndicator(
                             value: webViewController.progress.toDouble(),)
-                          : Container();
-                    },
-                  ),
-                  // (webViewController.progress>0)
-                  //     ? Container(
-                  //       child: LinearProgressIndicator(
-                  //   value: webViewController.progress,),
-                  //     )
-                  //     : Container(),
-                  // Container(
-                  //   padding: EdgeInsets.all(10.0),
-                  //   child: (webViewController.progress>0)
-                  //       ? LinearProgressIndicator(
-                  //     value: webViewController.progress,)
-                  //       : Container()
-                  // ),
+                          : Container()),
                   Expanded(
                     child: InAppWebView(
                       gestureRecognizers:
@@ -97,16 +90,15 @@ class _WebViewPageState extends State<WebViewPage> {
                         //시작시 현 컨트롤러 업데이트 & 세션스토리지 로드 + 업데이트 -> 로그인 체크 가능
                         webViewController.wvc = controller;
                         // 서순에 맞게 로딩을 하기위해 future화 -> 다이얼로그가 끝나야 로그인체크를 시작
-
                         SessionStorage ss =
                             SessionStorage(webViewController.wvc);
                         webViewController.ssItem =
                             await ss.getItem(key: "loginUserForm");
-                        webViewController.checkSignin(url);
 
+                        webViewController.checkSignin(url);
                         //리로드 + 체크용도
                         await webViewController.checkAndReLoadUrl();
-                        print("로딩 끝");
+
                       },
                       shouldOverrideUrlLoading:
                           (controller, shouldOverrideUrlLoadingRequest) async {
@@ -128,8 +120,7 @@ class _WebViewPageState extends State<WebViewPage> {
                           print(
                               "\n\n\n인터셉트 완료 : ${ajaxRequest.toString()} \n\n\n");
                           String data = ajaxRequest.data;
-                          ajaxRequest.data = data +
-                              "&devToken=${webViewController.deviceToken}";
+                          if(!data.contains("procType")) ajaxRequest.data = data + "&devToken=${webViewController.deviceToken}";
                           print(
                               "수정 후 data : ${ajaxRequest.data} : ${ajaxRequest.url}");
                         }
@@ -138,13 +129,30 @@ class _WebViewPageState extends State<WebViewPage> {
 
                         return ajaxRequest;
                       },
+                      onAjaxReadyStateChange: (InAppWebViewController controller,
+                          AjaxRequest ajaxRequest) async {
+                        if(ajaxRequest.readyState == AjaxRequestReadyState.LOADING){
+                          // await webViewController.ajaxCompleter.future;
+                        }
+                        if (webViewController.isSignin&&ajaxRequest.url.toString().contains("loginProc")&&ajaxRequest.readyState == AjaxRequestReadyState.DONE && ajaxRequest.status == 200){
+                          webViewController.ajaxLoadDone=ajaxRequest;
+                          String res = ajaxRequest.responseText;
+                          print("ajax response 결과 확인 : $res");
+                          await SessionStorage(controller).setItem(key: "loginUserForm", value: json.decode(res));
+                        }
+
+                        return AjaxRequestAction.PROCEED;
+
+                      },
                       onAjaxProgress: (InAppWebViewController controller,
                           AjaxRequest ajaxRequest) async {
                         /// TODO: 1029  여기서 인터셉트 처리하게 수정
                         if (ajaxRequest.event.type ==
                             AjaxRequestEventType.LOAD) {
+                          ajaxRequest.readyState;
                           Map<String, Object> res = ajaxRequest.response;
                         }
+
                         return AjaxRequestAction.PROCEED;
                       },
                     ),

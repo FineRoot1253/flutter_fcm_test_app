@@ -1,0 +1,1 @@
+const MESSAGE_TYPE_LIST = ["테스트","게시글","서류함"];

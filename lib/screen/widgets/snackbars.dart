@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-import 'package:get/get_navigation/src/dialog/dialog_route.dart';
 
 /// 여기에 전역으로 사용할 필요한 스낵바들을 정의
 
@@ -65,17 +64,19 @@ void showItemSnackBar(
                           onPressed: () {
                             WebViewController.to.receivedURL =
                             message["data"]["URL"];
-                            if (WebViewController.to.receivedURL.isNotEmpty &&
-                                !WebViewController.to.receivedURL.isNull) {
-                              List<String> paths = WebViewController.to
-                                  .receivedURL.split('/');
-                              WebViewController.to.compID =
-                              paths[paths.length - 1].split("=")[1];
-                              WebViewController.to.receivedURL =
-                                  WebViewController.to.receivedURL.substring(
-                                      0, WebViewController.to.receivedURL.indexOf(
-                                      'compID')) ?? null;
-                            }
+                            WebViewController.to.compCd = message["data"]["compCd"];
+
+                            // if (WebViewController.to.receivedURL.isNotEmpty &&
+                            //     !WebViewController.to.receivedURL.isNull) {
+                            //   List<String> paths = WebViewController.to
+                            //       .receivedURL.split('/');
+                            //   WebViewController.to.compCd =
+                            //   paths[paths.length - 1].split("=")[1];
+                            //   WebViewController.to.receivedURL =
+                            //       WebViewController.to.receivedURL.substring(
+                            //           0, WebViewController.to.receivedURL.indexOf(
+                            //           'compID')) ?? null;
+                            // }
                             WebViewController.to.checkAndReLoadUrl().then((_) =>
                                 Get.back());
                           },
@@ -91,9 +92,7 @@ void showItemSnackBar(
                           borderSide: BorderSide(color: Colors.blue,
                               style: BorderStyle.solid,
                               width: 1),
-                          onPressed: () {
-                            Get.back();
-                          },
+                          onPressed: ()=>Get.back(),
                           child: Text(
                             "닫기", style: TextStyle(color: Colors.blue),)),
                     )

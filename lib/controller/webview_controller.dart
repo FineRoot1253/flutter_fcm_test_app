@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:typed_data';
 import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
 import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
@@ -18,12 +17,12 @@ import 'package:get/get.dart';
 /// fcm api와 함께 동작을 해야하기 때문에 현재 상태를 기용중
 
 class WebViewController extends GetxController {
-
   /// CV의 편한 연결을 위해 추가
   static WebViewController get to => Get.find();
 
   /// repository 연결
   final HttpRepository repository;
+
   WebViewController({@required this.repository}) : assert(repository != null);
 
   /// API 연결
@@ -36,8 +35,8 @@ class WebViewController extends GetxController {
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
-  /// 업체 ID
-  String compID;
+  /// 업체 Code
+  String compCd;
 
   ///기기 토큰 변수
   String deviceToken;
@@ -57,15 +56,37 @@ class WebViewController extends GetxController {
   /// snackbar 중복 방지용 변수
   bool isDialogDone = true;
 
-  /// 토큰 재발급 처리용 변수
-  /// 토큰은 다음과 같은 상황에 자동으로 재발급된다.
-  /// 1) deleteInstanceID를 호출할 때
-  /// 2) 유저가 앱을 삭제할 때
+  /// ajaxRequest 스트림 컨트롤 변수
+  StreamController<AjaxRequest> streamController = StreamController<AjaxRequest>.broadcast();
+
+  /// ajaxRequest 스트림 subscription
+  StreamSubscription<AjaxRequest> ajaxStreamSubScription;
+
+  /// ajaxRequest 동기처리용 변수
+  /// 이것을 await, done이 되면 complete
+  Completer ajaxCompleter;
+
+  /// ajaxRequest 스트림 변수
+  /// 이 스트림을 init에서 listen
+  /// 이벤트 발생시 completer를 complete
+  Stream<AjaxRequest> get ajaxStream => streamController.stream;
+
+
+  /// 스트림 발생용 setter
+  set ajaxLoadDone(AjaxRequest val){
+    streamController.add(val);
+  }
+
+
+
+  ///  토큰 재발급 처리용 변수
+  ///  토큰은 다음과 같은 상황에 자동으로 재발급된다.
+  ///  1) deleteInstanceID를 호출할 때
+  ///  2) 유저가 앱을 삭제할 때
   ///  플러그인에 onRefreshToken이 스트림으로 되어있고
   ///  사용을 할때는 아래의 StreamSubscription에 리슨을 걸어주면
   ///  알아서 2가지 상황에 재발급을 받는다.
   // StreamSubscription refreshing;
-
 
   /// view에서 로그인, 로그아웃 체크용도
   checkSignin(String currentURL) => _checkSignin(currentURL);
@@ -76,7 +97,8 @@ class WebViewController extends GetxController {
   /// view initstate에서 호출용
   initNotifications() async {
     flnApiInstance.initFLN();
-    await flnApiInstance.flnPlugin.initialize(flnApiInstance.initializationSettings,
+    await flnApiInstance.flnPlugin.initialize(
+        flnApiInstance.initializationSettings,
         onSelectNotification: onSelectNotification);
     fcmApiInstance.fcmPlugin.configure(
       onLaunch: _onFCMReceived,
@@ -86,12 +108,11 @@ class WebViewController extends GetxController {
     );
     fcmApiInstance.fcmInitialize();
 
-    ///  로그인시 토큰 체크용, TODO: 추후 DB에 저장 필요
+    ///  로그인시 토큰 체크용
     fcmApiInstance.fcmPlugin.getToken().then((String token) {
       assert(token != null);
       print("Push Messaging token: $token");
-      print("token length : ${token.length}");
-      this.deviceToken=token;
+      this.deviceToken = token;
     });
 
     /// 토큰 재발급 리슨, TODO: 추후 사용 필요시 주석제거
@@ -99,46 +120,70 @@ class WebViewController extends GetxController {
     //   this.deviceToken=newToken;
     //   print("디바이스 토큰 교체완료 : ${this.deviceToken}");
     // });
+
+    /// fcmApiInstance.backGroundMessagePort
+    /// fcm서버에서 message받음 1)
+    /// 아래 onData 발동됨 2)
+    /// fcm mybackgroundMessageHanlder는 2가지 동작을 수행 3)
+    /// 3_1) flnApi.flnplugin.show를 수행
+    /// 3_2) this.flnApiInstance.notificationList send
+    /// 아래의 listen에서 send된 notificationList를 업데이트 4)
+    fcmApiInstance.backGroundMessagePort.listen((message) {this.flnApiInstance.notificationList=message; });
+    ajaxCompleter=Completer();
+    ajaxStreamSubScription = ajaxStream.listen(_ajaxEventHandler);
   }
+
+  void _ajaxEventHandler(AjaxRequest req){
+    if(req.readyState==AjaxRequestReadyState.DONE) ajaxCompleter.complete(req.readyState);
+  }
+
   /// background에서 접근 권한이 없음
   /// 빌드시 미리 이 핸들러를 TOP_LEVEL에 정의 OR static화 해두어야 isolate된 BackGround에서 접근 가능
   /// 현재 background용 콜백은 main.dart에 정의됨
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
-    print("\n\n\n\n\n\n\n\n\n\nonMessage : $message\n\n\n\n\n\n\n\n\n");
-        showItemSnackBar(username: null, message: message);
-
-    // await checkAndReLoadUrl();
+    print("\n\n\nonMessage : $message\n\n\n");
+    showItemSnackBar(username: null, message: message);
   }
 
   /// Resume + Launch 용 콜백
   Future<dynamic> _onFCMReceived(Map<String, dynamic> message) async {
-    print("\n\n\n\n\n\n\n\n\n\nonResume : $message\n\n\n\n\n\n\n\n\n");
-    // await checkAndReLoadUrl();
+    print("n\n\nonResume : $message\n\n\n");
   }
 
   ///progress 변경시 콜백
   _progressChanged(double progress) {
-    print(progress);
-    this.progress=progress;
+    this.progress = progress;
     update();
     // if(progress==(1.0).obs) this.rxProgress=0.toDouble().obs;
   }
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
-    print("URL체크 : $payload");
-
+    print(flnApiInstance.notificationList);
+    int index = payload.indexOf("msgId");
+    String msgId = payload.substring((index+6),(index+8));
+    String compCd = payload.substring((index+16));
+    print("결과 : $msgId : $compCd");
+    if (payload.contains("msgId")) {
+      msgId = int.tryParse(msgId).toString();
+      print("$msgId만 삭제");
+      flnApiInstance.notificationList
+          .removeWhere((element) => element == msgId);
+      print(flnApiInstance.notificationList);
+    } else {
+      print("다삭제");
+      flnApiInstance.notificationList.clear();
+      print(flnApiInstance.notificationList);
+    }
+    this.compCd=compCd;
     /// 받은 URL 업데이트
-    List<String> paths = payload.split('/');
-    compID=paths[paths.length-1].split("=")[1];
-    receivedURL = payload.substring(0,payload.indexOf('compID')) ?? null;
-    print("업데이트 완료 ) receivedURL : $receivedURL, receivedURL :  $compID");
-
+    receivedURL = payload.substring(0,index);
+    _checkSignin(await wvc.getUrl());
+     if(isSignin) await wvc.loadUrl(url: MAIN_URL + "/m/taxagent/custlist");
     /// 리로드 체크
     await checkAndReLoadUrl();
   }
-
 
   ///TODO 추후 확장성을 위해 global 화 필요
 
@@ -163,23 +208,24 @@ class WebViewController extends GetxController {
   /// checkAndReLoadUrl(), fcm에서 링크가 보내지면 리로드 동작, 평소에는 URL변수가 null -> 체크후 return;
   /// fcm의 의해 새로운 링크가 추가되었는지 체크 -> 웹뷰 리로드 -> URL변수 null 초기화
   Future<void> checkAndReLoadUrl() async {
+
+
     ///FCM onResume callback & InAppWebView onLoadStart
     ///this.wvc=controller; -> 넣는 위치에 따라 필요여부 있음
     ///push notification or snackBar 에 의해 한번 거치게되면 receivedURL=null,
     ///세션스토리지 Null 유무로 로그인체크
     ///-> 재호출시 리로드가 되지 않아야 함
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
-    print("${!ssItem.isNull} : ${!receivedURL.isNull} : ${receivedURL != "/"}");
     if (!ssItem.isNull && !receivedURL.isNull && receivedURL != "/") {
-      // print(receivedURL+compID);
-      // if(receivedURL.endsWith("/dashboard/")) {
-      //   await wvc.postUrl(url: "/bizbooks/login/loginProc",
-      //       postData: Uint8List.fromList(
-      //           ('compCd=' + compID + "&procType=5").codeUnits)).then((value) =>
-      //       print("재로그인 완료"));
-      //       compID = null;
-      // }
-      await wvc.loadUrl(url: MAIN_URL + receivedURL);
+      ///TODO: url에 따라 나눠질 필요 있음 여기서 분기 추가해야함
+      ///앞에 r을 붙이면 형식 상관없이 raw string으로 판정
+      String source6 = """var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "/bizbooks/login/loginProc");
+      xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      xhttp.send("compCd=$compCd&procType=5");""";
+        await wvc.evaluateJavascript(source: source6);
+        await ajaxCompleter.future;
+       await wvc.loadUrl(url: MAIN_URL + receivedURL);
       receivedURL = null;
     }
   }
