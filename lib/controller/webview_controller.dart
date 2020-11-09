@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
 import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
@@ -128,7 +131,10 @@ class WebViewController extends GetxController {
     /// 3_1) flnApi.flnplugin.show를 수행
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
-    fcmApiInstance.backGroundMessagePort.listen((message) {this.flnApiInstance.notificationList=message; });
+    fcmApiInstance.backGroundMessagePort.listen((message) {
+      this.flnApiInstance.notificationList=message;
+      print("MAIN ISOLATE : ${this.flnApiInstance.notificationList}");
+    });
     ajaxCompleter=Completer();
     ajaxStreamSubScription = ajaxStream.listen(_ajaxEventHandler);
   }
@@ -160,29 +166,28 @@ class WebViewController extends GetxController {
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
-    print(flnApiInstance.notificationList);
-    int index = payload.indexOf("msgId");
-    String msgId = payload.substring((index+6),(index+8));
-    String compCd = payload.substring((index+16));
-    print("결과 : $msgId : $compCd");
-    if (payload.contains("msgId")) {
-      msgId = int.tryParse(msgId).toString();
-      print("$msgId만 삭제");
-      flnApiInstance.notificationList
-          .removeWhere((element) => element == msgId);
-      print(flnApiInstance.notificationList);
-    } else {
-      print("다삭제");
-      flnApiInstance.notificationList.clear();
-      print(flnApiInstance.notificationList);
-    }
-    this.compCd=compCd;
-    /// 받은 URL 업데이트
-    receivedURL = payload.substring(0,index);
+
+    final SendPort sendPort = IsolateNameServer.lookupPortByName("fcm_background_isolate_return");
+      Map<String, dynamic> payloadMap = jsonDecode(payload);
+
+      if(!(payloadMap["msgId"]=="0")) {
+        this.flnApiInstance.notificationList
+            .removeWhere((element) => element == payloadMap["msgId"]);
+      }else {
+        this.flnApiInstance.notificationList.clear();
+      }
+      sendPort.send(flnApiInstance.notificationList);
+      /// 받은 URL,compCd 업데이트
+      receivedURL = payloadMap["URL"];
+      this.compCd=payloadMap["compCd"];
+
+    /// loginCheck 먼저하고 재로그인
     _checkSignin(await wvc.getUrl());
-     if(isSignin) await wvc.loadUrl(url: MAIN_URL + "/m/taxagent/custlist");
-    /// 리로드 체크
+     if(isSignin&&!(receivedURL=="/")) await wvc.loadUrl(url: MAIN_URL + "/m/taxagent/custlist");
+
+     /// 리로드 체크
     await checkAndReLoadUrl();
+
   }
 
   ///TODO 추후 확장성을 위해 global 화 필요
@@ -218,7 +223,7 @@ class WebViewController extends GetxController {
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
     if (!ssItem.isNull && !receivedURL.isNull && receivedURL != "/") {
       ///TODO: url에 따라 나눠질 필요 있음 여기서 분기 추가해야함
-      ///앞에 r을 붙이면 형식 상관없이 raw string으로 판정
+      print(compCd);
       String source6 = """var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "/bizbooks/login/loginProc");
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -226,7 +231,8 @@ class WebViewController extends GetxController {
         await wvc.evaluateJavascript(source: source6);
         await ajaxCompleter.future;
        await wvc.loadUrl(url: MAIN_URL + receivedURL);
-      receivedURL = null;
+      this.receivedURL = null;
+      this.compCd=null;
     }
   }
 }

@@ -27,7 +27,6 @@ class FLNApi {
     this.platformChannelSpecifics = details;
   }
 
-
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
       fullScreenIntent: false,

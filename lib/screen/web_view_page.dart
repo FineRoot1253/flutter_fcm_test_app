@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/foundation.dart';
@@ -131,13 +130,9 @@ class _WebViewPageState extends State<WebViewPage> {
                       },
                       onAjaxReadyStateChange: (InAppWebViewController controller,
                           AjaxRequest ajaxRequest) async {
-                        if(ajaxRequest.readyState == AjaxRequestReadyState.LOADING){
-                          // await webViewController.ajaxCompleter.future;
-                        }
                         if (webViewController.isSignin&&ajaxRequest.url.toString().contains("loginProc")&&ajaxRequest.readyState == AjaxRequestReadyState.DONE && ajaxRequest.status == 200){
                           webViewController.ajaxLoadDone=ajaxRequest;
                           String res = ajaxRequest.responseText;
-                          print("ajax response 결과 확인 : $res");
                           await SessionStorage(controller).setItem(key: "loginUserForm", value: json.decode(res));
                         }
 
@@ -146,13 +141,6 @@ class _WebViewPageState extends State<WebViewPage> {
                       },
                       onAjaxProgress: (InAppWebViewController controller,
                           AjaxRequest ajaxRequest) async {
-                        /// TODO: 1029  여기서 인터셉트 처리하게 수정
-                        if (ajaxRequest.event.type ==
-                            AjaxRequestEventType.LOAD) {
-                          ajaxRequest.readyState;
-                          Map<String, Object> res = ajaxRequest.response;
-                        }
-
                         return AjaxRequestAction.PROCEED;
                       },
                     ),

@@ -65,18 +65,6 @@ void showItemSnackBar(
                             WebViewController.to.receivedURL =
                             message["data"]["URL"];
                             WebViewController.to.compCd = message["data"]["compCd"];
-
-                            // if (WebViewController.to.receivedURL.isNotEmpty &&
-                            //     !WebViewController.to.receivedURL.isNull) {
-                            //   List<String> paths = WebViewController.to
-                            //       .receivedURL.split('/');
-                            //   WebViewController.to.compCd =
-                            //   paths[paths.length - 1].split("=")[1];
-                            //   WebViewController.to.receivedURL =
-                            //       WebViewController.to.receivedURL.substring(
-                            //           0, WebViewController.to.receivedURL.indexOf(
-                            //           'compID')) ?? null;
-                            // }
                             WebViewController.to.checkAndReLoadUrl().then((_) =>
                                 Get.back());
                           },
