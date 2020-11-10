@@ -7,7 +7,7 @@ import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
 import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
-import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
+import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget{
     return GetMaterialApp(
       initialBinding: WebViewBinding(),
       title: 'Flutter Demo',
-      home: WebViewPage(),
+      home: ScreenHolder(),
       getPages: routes,
     );
   }
@@ -60,7 +60,7 @@ groupSummaryNotification(message,
           contentTitle: summaryText, summaryText: '$total개의 안 읽은 알림'),
       color: Colors.blue.shade800,
       importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
+      largeIcon: DrawableResourceAndroidBitmap("@mipmap/app_icon"),
       priority: Priority.max);
   // flnApiInstance.flnPlugin.cancel()
   await flnApiInstance.flnPlugin.show(
@@ -104,7 +104,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
           summaryText: message["data"]["title"] + " 알림"),
       color: Colors.blue.shade800,
       importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
+      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
 

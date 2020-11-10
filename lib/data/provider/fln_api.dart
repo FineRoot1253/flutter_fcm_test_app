@@ -32,7 +32,7 @@ class FLNApi {
       fullScreenIntent: false,
       color: Colors.blue.shade800,
       importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("noti_icon"),
+      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
   var _initializationSettingsAndroid;
@@ -46,7 +46,7 @@ class FLNApi {
   ///이 메서드는 webviewinit 메서드쪽에서 호출해서 사용될 용도이다.
   void initFLN() {
     _initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/noti_icon');
+        AndroidInitializationSettings('@mipmap/app_icon');
     _initializationSettingsIOS = IOSInitializationSettings();
     _initializationSettings = InitializationSettings(
       android: _initializationSettingsAndroid,

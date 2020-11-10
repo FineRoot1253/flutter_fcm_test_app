@@ -1,6 +1,7 @@
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 
 
@@ -89,4 +90,14 @@ void showItemSnackBar(
               ],
             ),
           ));
+}
+
+showToast(context){
+  try{
+  Fluttertoast.showToast(
+    msg: "\'뒤로\'버튼을 한번 더 터치하면 앱이 종료됩니다.",
+    toastLength: Toast.LENGTH_SHORT
+  );}catch(e){
+    print("오류 발생 : $e");
+  }
 }
