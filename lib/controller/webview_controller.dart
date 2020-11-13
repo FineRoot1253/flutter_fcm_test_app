@@ -3,8 +3,8 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui';
-import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
-import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
+import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 
 /// 현재 컨트롤러에는  mvc 모델에 쓰이는 컨트롤러에 비해 다소 많은 기능이 추가되어있음
 /// 웹뷰 url로딩을 직접 컨트롤할 용도로 사용을 하기 위해선
@@ -31,6 +32,7 @@ class WebViewController extends GetxController {
   /// API 연결
   final flnApiInstance = FLNApi();
   final fcmApiInstance = FCMApi();
+  final hiveApiInstance = HiveApi();
 
   /// notification의 확장성을 위해 추가한 플러그인, FCM과 연동
   final plugin = FlutterLocalNotificationsPlugin();
@@ -41,10 +43,10 @@ class WebViewController extends GetxController {
   /// 업체 Code
   String compCd;
 
-  ///기기 토큰 변수
+  /// 기기 토큰 변수
   String deviceToken;
 
-  ///로그인 체크 변수, 로그인 환영 메시지 호출 여부
+  /// 로그인 체크 변수, 로그인 환영 메시지 호출 여부
   bool isSignin = false;
 
   /// 웹뷰의 웹뷰 컨트롤러, 쉬운 접근을 위해 여기에 선언
@@ -74,13 +76,20 @@ class WebViewController extends GetxController {
   /// 이벤트 발생시 completer를 complete
   Stream<AjaxRequest> get ajaxStream => streamController.stream;
 
+  /// hive db
+  Box box;
+  
+  /// 웹뷰 스크롤 위치 저장값
+  int scrollY = 0;
+  int scrollX = 0;
 
   /// 스트림 발생용 setter
   set ajaxLoadDone(AjaxRequest val){
     streamController.add(val);
   }
 
-
+  /// login temp userform
+  Map<dynamic, dynamic> tempUserForm = Map<dynamic, dynamic>();
 
   ///  토큰 재발급 처리용 변수
   ///  토큰은 다음과 같은 상황에 자동으로 재발급된다.
@@ -137,6 +146,15 @@ class WebViewController extends GetxController {
     });
     ajaxCompleter=Completer();
     ajaxStreamSubScription = ajaxStream.listen(_ajaxEventHandler);
+
+    await hiveApiInstance.init();
+
+    /// DAO용 box
+    this.box = await hiveApiInstance.encryptedBox;
+
+    ///autoLogincheck용
+    // await autoLoginProc();
+
   }
 
   void _ajaxEventHandler(AjaxRequest req){
@@ -182,7 +200,7 @@ class WebViewController extends GetxController {
       this.compCd=payloadMap["compCd"];
 
     /// loginCheck 먼저하고 재로그인
-    _checkSignin(await wvc.getUrl());
+    await _checkSignin(await wvc.getUrl());
      if(isSignin&&!(receivedURL=="/")) await wvc.loadUrl(url: MAIN_URL + "/m/taxagent/custlist");
 
      /// 리로드 체크
@@ -192,21 +210,23 @@ class WebViewController extends GetxController {
 
   ///TODO 추후 확장성을 위해 global 화 필요
 
-  _checkSignin(String currentURL) {
+  _checkSignin(String currentURL) async {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
     ///&&this.progress==-1 && !ssItem.isNull
-
     if (!ssItem.isNull && !isSignin) {
       var username = ssItem["user"]["userNm"];
       showItemSnackBar(message: null, username: username);
       isSignin = true;
+      ScreenHodlerController.to.toggle=isSignin;
     }
 
     ///로그아웃하는 중인지 체크, 로그아웃하는 url이면 로그아웃절차 시작
     ///!ssItem.isNull, 로그인상태 여부 체크
-    if (currentURL.endsWith("/m") && !ssItem.isNull) {
+    if (currentURL.endsWith("/login") && isSignin) {
       ssItem = null;
       isSignin = false;
+      ScreenHodlerController.to.toggle=isSignin;
+      await this.box.clear();
     }
   }
 
@@ -223,16 +243,62 @@ class WebViewController extends GetxController {
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
     if (!ssItem.isNull && !receivedURL.isNull && receivedURL != "/") {
       ///TODO: url에 따라 나눠질 필요 있음 여기서 분기 추가해야함
-      print(compCd);
       String source6 = """var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "/bizbooks/login/loginProc");
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("compCd=$compCd&procType=5");""";
+
         await wvc.evaluateJavascript(source: source6);
         await ajaxCompleter.future;
        await wvc.loadUrl(url: MAIN_URL + receivedURL);
+
       this.receivedURL = null;
       this.compCd=null;
     }
   }
+
+  Future writeUser({@required String userId, @required String userPwd}) async {
+    await box.putAll({"userId" : userId, "userPwd" : userPwd});
+  }
+
+  Map<dynamic, dynamic> get readUser => box?.toMap() ;
+
+  //최초 로그인시
+  storeUserLoginForm() async {
+    await writeUser(userId: tempUserForm["userId"], userPwd: tempUserForm["userPwd"]);
+    tempUserForm = readUser;
+  }
+
+  autoLoginProc() async {
+
+    Map<dynamic, dynamic> userForm = readUser;
+
+    // 로그인 상태 체크
+    if (userForm.isNotEmpty && !userForm.isNull) {
+
+        print("자동로그인 실행");
+      String autoLoginProcSource = """
+var xhttp = new XMLHttpRequest();
+      xhttp.open("POST", "/bizbooks/login/loginProc");
+      xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      xhttp.send("loginId=${userForm["userId"]}&userPw=${userForm["userPwd"]}");
+       """;
+
+      await this.wvc.evaluateJavascript(source: autoLoginProcSource);
+      await this.ajaxCompleter.future;
+      await this.wvc.loadUrl(url: MAIN_URL+"/taxagent/custlist");
+    }else Get.back();//로그인 불가 판정 -> 다이얼로그창 닫음
+
+  }
+  storeViewScrollControl(bool changed, {int x, int y}) async {
+
+
+      this.scrollX = x;
+      this.scrollY = y;
+      print("스크롤 저장 : [x : ${this.scrollX}, y : ${this.scrollY}]");
+      if(changed) await this.wvc.scrollTo(x: this.scrollX, y: this.scrollY);
+
+
+  }
+
 }

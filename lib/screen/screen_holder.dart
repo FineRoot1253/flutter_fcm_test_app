@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
@@ -14,17 +15,44 @@ class ScreenHolder extends StatefulWidget {
 class _ScreenHolderState extends State<ScreenHolder> {
   bool isTimerRunnting = false;
   WebViewController controller = WebViewController.to;
+  ScreenHodlerController screenHodlerController = Get.put(ScreenHodlerController());
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       child: SafeArea(
-        child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            resizeToAvoidBottomPadding: false,
-          body: Container(
-              child: WebViewPage(screenHeight: MediaQuery.of(context).padding.top,)
-          ),
+        child: GetBuilder<ScreenHodlerController>(
+          builder:(_){
+            return Scaffold(
+              resizeToAvoidBottomInset: false,
+              resizeToAvoidBottomPadding: false,
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+              bottomNavigationBar: _.isSignin ? BottomAppBar(
+                  shape: _.isSignin ? CircularNotchedRectangle() : null,
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  child:Container(
+                      height: (Get.height*0.05),
+                      color: Colors.white
+                  )
+              ) : BottomAppBar(),
+              floatingActionButton: _.isSignin ? Container(
+                height: Get.width * 0.12,
+                width: Get.width * 0.12,
+                child: FloatingActionButton(
+                  child:Container(
+                    decoration: BoxDecoration(
+                      shape:BoxShape.circle,
+                      image: DecorationImage(image: Image.asset("assets/images/app_icon.png",fit: BoxFit.cover,isAntiAlias: true,).image)
+                    ),
+                  ),
+                  onPressed: () async => await controller.wvc.scrollTo(x: 0, y: 40),
+                ),
+              ) : FloatingActionButton(backgroundColor: Colors.transparent,elevation: 0.0),
+              body: Container(
+                  child: WebViewPage(screenHeight: MediaQuery.of(context).padding.top,)
+              ),
+            );
+          },
         ),
       ),
       onWillPop: _willPopCallBack,
@@ -32,7 +60,6 @@ class _ScreenHolderState extends State<ScreenHolder> {
   }
 
   Future<bool> _willPopCallBack() async {
-    print("실행은 하나요? : ${Get.routing.route.isFirst}");
     if(Get.routing.route.isFirst){
       print("1");
       if(!isTimerRunnting){

@@ -101,3 +101,12 @@ showToast(context){
     print("오류 발생 : $e");
   }
 }
+
+autoLoginDialog(){
+  return Get.defaultDialog(
+    barrierDismissible: false,
+    title: "로그인 체크...",
+    content :
+      CircularProgressIndicator()
+  );
+}
