@@ -3,14 +3,15 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
-import 'package:fcm_tet_01_1008/data/provider/fcm_api.dart';
-import 'package:fcm_tet_01_1008/data/provider/fln_api.dart';
+import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+
+
 
 class MyApp extends StatelessWidget{
   // This widget is the root of your application.
@@ -46,10 +47,10 @@ void main() async {
 
 groupSummaryNotification(message,
     {String summaryText,
-    int total,
-    String groupTitle,
-    String groupContent,
-    List<String> lines}) async {
+      int total,
+      String groupTitle,
+      String groupContent,
+      List<String> lines}) async {
   final flnApiInstance = FLNApi();
 
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -143,7 +144,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   /// 이 메서드는 isolate domain -> 이 메서드 속 resource가 공유안됨
   /// 여기서는 앞서 등록한 sendport를 가져와 메시지를 send
   final SendPort port =
-      IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
+  IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
   port.send(flnApiInstance.notificationList);
 

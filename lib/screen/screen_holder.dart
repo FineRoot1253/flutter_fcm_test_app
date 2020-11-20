@@ -1,8 +1,7 @@
 import 'dart:async';
-
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
-import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
-import 'package:fcm_tet_01_1008/screen/web_view_page.dart';
+import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
+import 'package:fcm_tet_01_1008/screen/main_web_view_page.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,7 +13,8 @@ class ScreenHolder extends StatefulWidget {
 
 class _ScreenHolderState extends State<ScreenHolder> {
   bool isTimerRunnting = false;
-  WebViewController controller = WebViewController.to;
+
+  MainWebViewController controller = MainWebViewController.to;
   ScreenHodlerController screenHodlerController = Get.put(ScreenHodlerController());
 
   @override
@@ -22,6 +22,7 @@ class _ScreenHolderState extends State<ScreenHolder> {
     return WillPopScope(
       child: SafeArea(
         child: GetBuilder<ScreenHodlerController>(
+          initState: (_){screenHodlerController.screenHeight=MediaQuery.of(context).padding.top;},
           builder:(_){
             return Scaffold(
               resizeToAvoidBottomInset: false,
@@ -45,11 +46,15 @@ class _ScreenHolderState extends State<ScreenHolder> {
                       image: DecorationImage(image: Image.asset("assets/images/app_icon.png",fit: BoxFit.cover,isAntiAlias: true,).image)
                     ),
                   ),
-                  onPressed: () async => await controller.wvc.scrollTo(x: 0, y: 40),
+                  onPressed: _.onPressHomeBtn,
                 ),
               ) : FloatingActionButton(backgroundColor: Colors.transparent,elevation: 0.0),
-              body: Container(
-                  child: WebViewPage(screenHeight: MediaQuery.of(context).padding.top,)
+              body: IndexedStack(
+                index: _.currentIndex,
+                children: [
+                  MainWebViewPage(screenHeight: screenHodlerController.screenHeight),
+                  ..._.subWebViewPages
+                ],
               ),
             );
           },
@@ -61,30 +66,17 @@ class _ScreenHolderState extends State<ScreenHolder> {
 
   Future<bool> _willPopCallBack() async {
     if(Get.routing.route.isFirst){
-      print("1");
       if(!isTimerRunnting){
-        print("2");
         startTimer();
         showToast(context);
-        print("3");
         return false;
       }else {
-        print("4");
-        shouldLogout();
         return true;
       }
     }else{
-      print("5");
       isTimerRunnting = false;
-      shouldLogout();
       return true;
     }
-  }
-
-  shouldLogout()async{
-    controller.ssItem.clear();
-    await controller.wvc.webStorage.sessionStorage.clear();
-    print("로그아웃 결과 : ${controller.ssItem} : ${await controller.wvc.webStorage.sessionStorage.getItem(key: "loginUserForm")}");
   }
   
   startTimer(){

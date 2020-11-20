@@ -1,4 +1,6 @@
-import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -16,11 +18,12 @@ import 'package:get/get.dart';
 void showItemSnackBar(
     {@required String username,
       @required Map<String, dynamic> message,
-      @required WebViewController controller
+      @required MainWebViewController controller
     }) async {
 
   var titleStr;
   var bodyStr;
+  final wvcApiInstance = WVCApi();
 
   if (username.isNull) {
     titleStr = message["data"]["title"] ?? '알림';
@@ -63,11 +66,15 @@ void showItemSnackBar(
                               style: BorderStyle.solid,
                               width: 1),
                           onPressed: () {
-                            WebViewController.to.receivedURL =
-                            message["data"]["URL"];
-                            WebViewController.to.compCd = message["data"]["compCd"];
-                            WebViewController.to.checkAndReLoadUrl().then((_) =>
-                                Get.back());
+
+                              wvcApiInstance.receivedURL = message["data"]["URL"];
+                              wvcApiInstance.compCd = message["data"]["compCd"];
+                              wvcApiInstance.compUserId = message["data"]["userId"];
+
+                              if(ScreenHodlerController.to.currentIndex==1) ScreenHodlerController.to.onPressHomeBtn();
+
+                              MainWebViewController.to.checkAndReLoadUrl();
+                              Get.back();
                           },
                           child: Text(
                               "확인", style: TextStyle(color: Colors.blue))),
