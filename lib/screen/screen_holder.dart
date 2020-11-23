@@ -14,7 +14,6 @@ class ScreenHolder extends StatefulWidget {
 class _ScreenHolderState extends State<ScreenHolder> {
   bool isTimerRunnting = false;
 
-  MainWebViewController controller = MainWebViewController.to;
   ScreenHodlerController screenHodlerController = Get.put(ScreenHodlerController());
 
   @override

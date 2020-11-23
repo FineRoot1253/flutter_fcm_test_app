@@ -1,6 +1,7 @@
 import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
+import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -65,15 +66,25 @@ void showItemSnackBar(
                           borderSide: BorderSide(color: Colors.blue,
                               style: BorderStyle.solid,
                               width: 1),
-                          onPressed: () {
+                          onPressed: () async {
 
                               wvcApiInstance.receivedURL = message["data"]["URL"];
                               wvcApiInstance.compCd = message["data"]["compCd"];
                               wvcApiInstance.compUserId = message["data"]["userId"];
 
                               if(ScreenHodlerController.to.currentIndex==1) ScreenHodlerController.to.onPressHomeBtn();
+                              print("스낵바 로그인 여부 : ${wvcApiInstance.ssItem!=null} : ${wvcApiInstance.ssItem["procType"]!=2}");
+                              if(wvcApiInstance.ssItem!=null&&wvcApiInstance.ssItem["procType"]!=2) {
+                                if(wvcApiInstance.ssItem["user"]["userId"]==wvcApiInstance.compUserId) {
+                                  await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: (wvcApiInstance.receivedURL.endsWith("/smb00004")) ? FILE_STORAGE_URL : BOARD_URL);
+                                  wvcApiInstance.receivedURL = null;
+                                  wvcApiInstance.compCd = null;
+                                  wvcApiInstance.compUserId = null;
+                                }
 
-                              MainWebViewController.to.checkAndReLoadUrl();
+                              }else {
+                                await MainWebViewController.to.checkAndReLoadUrl();
+                              }
                               Get.back();
                           },
                           child: Text(

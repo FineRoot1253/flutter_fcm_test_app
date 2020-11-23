@@ -35,6 +35,9 @@ class MainWebViewController extends GetxController {
   /// 로그인 체크 변수, 로그인 환영 메시지 호출 여부
   bool isSignin = false;
 
+  /// 웹뷰 옵션
+  InAppWebViewGroupOptions webViewGroupOptions;
+
   /// login temp userform
   Map<dynamic, dynamic> tempUserForm = Map<dynamic, dynamic>();
 
@@ -72,10 +75,45 @@ class MainWebViewController extends GetxController {
     wvcApiInstance.mainWebViewModel=WebViewModel(
       url: MAIN_URL,
     );
-    return Future<void>.value();
     /// WebViewModel init END //////////////////////////////////////////////////
 
+
+    /// WebViewGroupOptions init START /////////////////////////////////////////
+    webViewGroupOptions = InAppWebViewGroupOptions(
+        android: AndroidInAppWebViewOptions(
+            supportMultipleWindows: true
+        ),
+        crossPlatform: InAppWebViewOptions(
+          javaScriptCanOpenWindowsAutomatically: true,
+          clearCache: true,
+          debuggingEnabled: true,
+          useShouldOverrideUrlLoading: true,
+          useShouldInterceptAjaxRequest: true,
+          useOnLoadResource: true,
+        )
+    );
+    /// WebViewGroupOptions init END ///////////////////////////////////////////
+
+    return Future<void>.value();
+
   }
+  /// 웹뷰 옵션 설정
+  webViewGroupOptionSetter(bool isSignin){
+    webViewGroupOptions=InAppWebViewGroupOptions(
+        android: AndroidInAppWebViewOptions(
+            supportMultipleWindows: true
+        ),
+        crossPlatform: InAppWebViewOptions(
+          javaScriptCanOpenWindowsAutomatically: true,
+          clearCache: true,
+          debuggingEnabled: true,
+          useShouldOverrideUrlLoading: true,
+          useShouldInterceptAjaxRequest: isSignin,
+          useOnLoadResource: true,
+        )
+    );
+  }
+
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
@@ -102,6 +140,7 @@ class MainWebViewController extends GetxController {
       if (ScreenHodlerController.to.currentIndex == 1) {
         ScreenHodlerController.to.onPressHomeBtn();
       }
+      print("로그인 여부 : $isSignin");
       if (isSignin) await checkAndReLoadUrl();
 
 
@@ -137,8 +176,10 @@ class MainWebViewController extends GetxController {
     ///세션스토리지 Null 유무로 로그인체크
     ///-> 재호출시 리로드가 되지 않아야 함
     ///receivedURL.isNull -> notification을 타고 왔는지 구분 가능
-    if (wvcApiInstance.ssItem!=null && !wvcApiInstance.compCd.isNull && wvcApiInstance.receivedURL != "/") {
+    print("${wvcApiInstance.ssItem!=null} : ${!wvcApiInstance.compCd.isNull} : ${wvcApiInstance.receivedURL != "/"} : ${wvcApiInstance.ssItem["procType"]==2}");
+    if (wvcApiInstance.ssItem!=null && !wvcApiInstance.compCd.isNull && wvcApiInstance.receivedURL != "/"&&wvcApiInstance.ssItem["procType"]==2) {
       ///TODO: url에 따라 나눠질 필요 있음 여기서 분기 추가해야함
+      print("오지마 여기");
       String source7 = """
       try{
       document.getElementById("taxAgentKey").value="${wvcApiInstance.compCd}";
@@ -161,13 +202,23 @@ class MainWebViewController extends GetxController {
       wvcApiInstance.compCd=null;
       wvcApiInstance.compUserId=null;
 
+    }else{
+      await wvcApiInstance.mainWebViewModel.webViewController
+          .loadUrl(
+          url: (wvcApiInstance.receivedURL
+              .endsWith("/board"))
+              ? BOARD_URL
+              : FILE_STORAGE_URL);
+      wvcApiInstance.compCd=null;
+      wvcApiInstance.compUserId=null;
+      wvcApiInstance.receivedURL = null;
     }
   }
 
   autoLoginProc() async {
-      String autoLoginProcSource = """
+    String autoLoginProcSource = """
 var xhttp = new XMLHttpRequest();
-      xhttp.open("POST", "$TOKEN_LOGIN_URL");
+      xhttp.open("POST", "$TOKEN_LOGIN_URL", true);
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=${wvcApiInstance.deviceToken}");
        """;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/foundation.dart';
@@ -67,37 +68,23 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
             supportMultipleWindows: true,
           ),
           crossPlatform: InAppWebViewOptions(
+              javaScriptCanOpenWindowsAutomatically: true,
             clearCache: true,
             debuggingEnabled: true,
             useShouldOverrideUrlLoading: true,
-            useShouldInterceptAjaxRequest: true,
-            useOnLoadResource: true
+            useOnLoadResource: true,
           )),
       onWebViewCreated: (InAppWebViewController controller)  {
         _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
       },
       onLoadResource: (controller, resource) async {
         /// TODO : resource.url 분기 세분화 필요!
+        print(resource.url);
         if(resource.url.contains("/m_header.js")){
           await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[1]);
         }
       },
-      shouldInterceptAjaxRequest:
-          (InAppWebViewController controller,
-          AjaxRequest ajaxRequest) async {
-        if (ajaxRequest.method == "POST"&&ajaxRequest.url==LOGOUT_URL) {
-          _controller.wvcApiInstance.ajaxApiInstance.streamController.add(ajaxRequest);
-          _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter=Completer();
-        }
-
-        return ajaxRequest;
-      },
-      onAjaxReadyStateChange: (InAppWebViewController controller,
-          AjaxRequest ajaxRequest) async {
-        if (ajaxRequest.readyState == AjaxRequestReadyState.DONE &&
-            ajaxRequest.status == 200&&
-            ajaxRequest.url.toString()==LOGOUT_URL) _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
-
+      onAjaxProgress: (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
         return AjaxRequestAction.PROCEED;
       },
       onProgressChanged:
@@ -109,12 +96,17 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
           String url) async {
         //URLLoad시작
         _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
+        if(url.endsWith("/login")) ScreenHodlerController.to.onPressHomeBtn();
       },
       shouldOverrideUrlLoading:
           (controller, shouldOverrideUrlLoadingRequest) async {
         var url = shouldOverrideUrlLoadingRequest.url;
         var uri = Uri.parse(url);
         print("오버로딩 URL 체크 : $url");
+        if(url.endsWith("no=undefined&bc=undefined")) {
+          // controller.goBack();
+          return ShouldOverrideUrlLoadingAction.CANCEL;
+        }
 
         return ShouldOverrideUrlLoadingAction.ALLOW;
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
@@ -124,11 +116,12 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
           await _controller.wvcApiInstance.subWebViewModel.webViewController.loadUrl(url:(_controller.wvcApiInstance.receivedURL.endsWith("/board")) ? BOARD_URL : FILE_STORAGE_URL);
           _controller.wvcApiInstance.receivedURL = null;
         }
+        print("현재 히스토리 : ${await controller.getCopyBackForwardList()}");
         //리로드 + 체크용도
       },
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");
-        if(consoleMessage.message=="logout") await _controller.wvcApiInstance.logoutProc();
+        if(consoleMessage.message=="logout") ScreenHodlerController.to.onPressHomeBtn();
       },
     );
   }

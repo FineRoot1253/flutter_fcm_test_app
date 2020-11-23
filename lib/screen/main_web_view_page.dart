@@ -67,10 +67,13 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
               Expanded(
                 child: FutureBuilder(
                   future: result,
-                  builder: (context, snapshot){
-                    if(snapshot.connectionState==ConnectionState.done) return buildWebView();
-                    else if(snapshot.hasError) return Text("오류가 발생하여 접근이 불가합니다.");
-                    else return Center(child: CircularProgressIndicator());
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done)
+                      return buildWebView();
+                    else if (snapshot.hasError)
+                      return Text("오류가 발생하여 접근이 불가합니다.");
+                    else
+                      return Center(child: CircularProgressIndicator());
                   },
                 ),
               ),
@@ -81,11 +84,11 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
     );
   }
 
-  buildWebView(){
+  buildWebView() {
     return InAppWebView(
       gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
         new Factory<OneSequenceGestureRecognizer>(
-              () => new EagerGestureRecognizer(),
+          () => new EagerGestureRecognizer(),
         ),
       ].toSet(),
       initialUrl: MAIN_URL,
@@ -99,10 +102,12 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
             debuggingEnabled: true,
             useShouldOverrideUrlLoading: true,
             useShouldInterceptAjaxRequest: true,
-            useOnLoadResource: true
-          )),
+            useOnLoadResource: true,
+          )
+      ),
       onWebViewCreated: (InAppWebViewController controller) {
-        _controller.wvcApiInstance.mainWebViewModel.webViewController = controller;
+        _controller.wvcApiInstance.mainWebViewModel.webViewController =
+            controller;
       },
       onProgressChanged:
           (InAppWebViewController controller, int progress) async {
@@ -111,35 +116,59 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
       },
       onLoadResource: (controller, resource) async {
         /// TODO : resource.url 분기 세분화 필요!
-
-        if(resource.url.contains("/selectCustlist"))  {
+        _controller.wvcApiInstance.mainWebViewModel.webViewController=controller;
+        /// 관제용리로드 여부 체크(푸시알람 터치후 로그인 하고 온 상태인지 여부)
+        if (resource.url.contains("/selectCustlist")) {
           String currentUrl = await controller.getUrl();
-          if(currentUrl.contains(MAIN_URL_LIST[0])||currentUrl.contains(MAIN_URL_LIST[1])) await _controller.checkAndReLoadUrl();
+          if (currentUrl.contains(MAIN_URL_LIST[0]) || currentUrl.contains(MAIN_URL_LIST[1])) await _controller.checkAndReLoadUrl();
         }
-        if(resource.url.contains("/m_header.js")){
+        if (resource.url.contains("/m_header.js")) {
+          print(1);
           String currentUrl = await controller.getUrl();
-          (currentUrl.contains(MAIN_URL_LIST[0])) ?
-          await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[0]) :
-          await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[1]);
+          ///관제용 메인(수임업체리스트)에서 initlogout
+          if(currentUrl.contains(MAIN_URL_LIST[0])) await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[0]);
+          else{/// 일반용 메인(대시보드)에서 ajaxoption false화
+            await _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter.future;
+            print("일반용 로그인 체크 : ${_controller.webViewGroupOptions.crossPlatform.useShouldInterceptAjaxRequest} : ${_controller.wvcApiInstance.ssItem["procType"]!=2}");
+            if(_controller.webViewGroupOptions.crossPlatform.useShouldInterceptAjaxRequest
+            &&_controller.wvcApiInstance.ssItem["procType"]!=2){
+              _controller.webViewGroupOptionSetter(false);
+              await controller.setOptions(options: _controller.webViewGroupOptions);
+              await SessionStorage(controller).setItem(key: "loginUserForm", value: _controller.wvcApiInstance.ssItem).then((value) async {
+              print("일반용 리로드 여부 체크 : ${_controller.wvcApiInstance.receivedURL != null}");
+                  if (_controller.wvcApiInstance.receivedURL != null) {
+                await _controller.wvcApiInstance.mainWebViewModel.webViewController
+                    .loadUrl(
+                    url: (_controller.wvcApiInstance.receivedURL
+                        .endsWith("/board"))
+                        ? BOARD_URL
+                        : FILE_STORAGE_URL);
+                _controller.wvcApiInstance.receivedURL = null;
+              }
+              });
+              ///일반용 리로드 여부 체크 (푸시 알람 터치후 로그인 후 온 상태인지 여부)
+            }
+            ///일반용 리스트에서 initlogout
+            await _controller.wvcApiInstance
+                .initLogoutProc(INIT_LOGOUT_BTNS[1]);
+          }
+
         }
       },
-      onLoadStart:
-          (InAppWebViewController controller, String url) async {
+      onLoadStart: (InAppWebViewController controller, String url) async {
         //URLLoad시작
         //시작시 현 컨트롤러 업데이트 & 세션스토리지 로드 + 업데이트 -> 로그인 체크 가능
-        _controller.wvcApiInstance.mainWebViewModel.webViewController = controller;
-        if (url.endsWith("/m")) autoLoginDialog();//최초 로그인시 다이얼로그 호출
+        _controller.wvcApiInstance.mainWebViewModel.webViewController =
+            controller;
+        if (url.endsWith("/m")) autoLoginDialog(); //최초 로그인시 다이얼로그 호출
+
       },
-      onLoadStop:
-          (InAppWebViewController controller, String url) async {
-
-            _controller.wvcApiInstance.mainWebViewModel.webViewController = controller;
-
+      onLoadStop: (InAppWebViewController controller, String url) async {
+        _controller.wvcApiInstance.mainWebViewModel.webViewController =
+            controller;
+          print("로딩 완료 url : $url");
         if (url.endsWith("/m")) await _controller.autoLoginProc();
-        if(url.endsWith("/dashboard")&&!(_controller.wvcApiInstance.receivedURL.isNull)){
-          await _controller.wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url:(_controller.wvcApiInstance.receivedURL.endsWith("/board")) ? BOARD_URL : FILE_STORAGE_URL);
-          _controller.wvcApiInstance.receivedURL = null;
-        }
+
 
         //리로드 + 체크용도
       },
@@ -147,8 +176,14 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
           (controller, shouldOverrideUrlLoadingRequest) async {
         var url = shouldOverrideUrlLoadingRequest.url;
         var uri = Uri.parse(url);
+        print("오버로딩 체크 : $url");
         if (["tel"].contains(uri.scheme)) {
           if (await canLaunch(url)) await launch(url);
+          return ShouldOverrideUrlLoadingAction.CANCEL;
+        }
+        if (url.endsWith("/board/detail?no=undefined&bc=undefined")) {
+          print(await controller.getCopyBackForwardList());
+          // controller.goBack();
           return ShouldOverrideUrlLoadingAction.CANCEL;
         }
 
@@ -156,54 +191,92 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
       },
       shouldInterceptAjaxRequest:
-          (InAppWebViewController controller,
-          AjaxRequest ajaxRequest) async {
+          (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
+            print("현재 AJAX URL : ${ajaxRequest.url}");
         if (ajaxRequest.method == "POST") {
           String data = ajaxRequest.data;
-          switch(ajaxRequest.url){
+
+          switch (ajaxRequest.url) {
             case INIT_LOGIN_URL:
-              if (!data.contains("procType")) ajaxRequest.data = data + "&devToken=${_controller.wvcApiInstance.deviceToken}";
+              if (!data.contains("procType")){
+                print("최초 로그인");
+                ajaxRequest.data = data +
+                    "&devToken=${_controller.wvcApiInstance.deviceToken}";
+              }
+              _controller.wvcApiInstance.ajaxApiInstance.streamController
+                  .add(ajaxRequest);
+              _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter =
+                  Completer();
               break;
             case TOKEN_LOGIN_URL:
             case LOGOUT_URL:
-              _controller.wvcApiInstance.ajaxApiInstance.streamController.add(ajaxRequest);
-              _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter=Completer();
+              _controller.wvcApiInstance.ajaxApiInstance.streamController
+                  .add(ajaxRequest);
+              _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter =
+                  Completer();
+              break;
+            default:
               break;
           }
         }
         return ajaxRequest;
       },
-      onAjaxReadyStateChange: (InAppWebViewController controller,
-          AjaxRequest ajaxRequest) async {
-        if (ajaxRequest.readyState == AjaxRequestReadyState.DONE &&
+      onAjaxReadyStateChange:
+          (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
+        if (ajaxRequest.method == "POST" &&
+            ajaxRequest.readyState == AjaxRequestReadyState.DONE &&
             ajaxRequest.status == 200) {
           String res = ajaxRequest.responseText;
-          switch(ajaxRequest.url.toString()){
+          switch (ajaxRequest.url.toString()) {
             case TOKEN_LOGIN_URL:
-                if(!res.isNullOrBlank)await SessionStorage(controller).setItem(key: "loginUserForm", value: jsonDecode(res));
-                _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;//스트림 종료
+              if (!res.isNullOrBlank) await SessionStorage(controller).setItem(key: "loginUserForm", value: jsonDecode(res));
+              _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest; //스트림 종료
               Get.back();
               break;
             case INIT_LOGIN_URL:
-              _controller.wvcApiInstance.ssItem = await SessionStorage(controller).getItem(key: "loginUserForm");
+              _controller.wvcApiInstance.ssItem =
+                  await SessionStorage(controller)
+                      .getItem(key: "loginUserForm");
               Get.back();
-              await _controller.checkSignin(await _controller.wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+              await _controller.checkSignin(await _controller
+                  .wvcApiInstance.mainWebViewModel.webViewController
+                  .getUrl());
+              _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone =
+                  ajaxRequest;
               break;
-            case LOGOUT_URL: /// TODO : 추가 조작사항이 있으면 여기서
-              _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
+            case LOGOUT_URL:
+
+              /// TODO : 추가 조작사항이 있으면 여기서
+              _controller.wvcApiInstance.ajaxApiInstance.ajaxLoadDone =
+                  ajaxRequest;
+              break;
+            default:
               break;
           }
         }
         return AjaxRequestAction.PROCEED;
       },
+      onAjaxProgress: (controller, ajaxRequest) async {
+        return AjaxRequestAction.PROCEED;
+      },
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");
-        if(consoleMessage.message=="logout") await _controller.wvcApiInstance.logoutProc();
+        if (consoleMessage.message == "logout"){
+          await _controller.wvcApiInstance.logoutProc();
+          if(_controller.wvcApiInstance.ssItem["procType"]!=2){
+            _controller.webViewGroupOptionSetter(true);
+            await controller.setOptions(options: _controller.webViewGroupOptions);
+          }
+        }
+
       },
       onCreateWindow: (controller, createWindowRequest) async {
         // TODO : 여기에서 새 윈도우를 만들어주어야한다.
         /// 화면 교체 작업을 해야한다
-        ScreenHodlerController.to.changeWebViewModel(WebViewModel(url:"about:blank",windowId: createWindowRequest.windowId), 1);
+        ScreenHodlerController.to.changeWebViewModel(
+            WebViewModel(
+                url: "about:blank", windowId: createWindowRequest.windowId),
+            1);
         return true;
       },
     );
