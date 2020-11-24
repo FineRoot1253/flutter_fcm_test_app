@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
@@ -7,6 +8,7 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:get/get.dart';
 
 class WVCApi {
 
@@ -38,6 +40,9 @@ class WVCApi {
 
   /// 기기 토큰 변수
   String deviceToken;
+
+  /// 유저의 로그인 타입
+  String procType;
 
   /// 세션 스토리지의 내용이 들어가는 링크드해쉬맵, 쉬운 접근을 위해 여기에 선언
   LinkedHashMap<String, dynamic> ssItem;
@@ -151,5 +156,11 @@ class WVCApi {
 
     await ajaxApiInstance.ajaxCompleter.future;
   }
+
+
+
+
+
+
 
 }

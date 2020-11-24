@@ -78,14 +78,9 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
         _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
       },
       onLoadResource: (controller, resource) async {
-        /// TODO : resource.url 분기 세분화 필요!
-        print(resource.url);
         if(resource.url.contains("/m_header.js")){
           await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[1]);
         }
-      },
-      onAjaxProgress: (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
-        return AjaxRequestAction.PROCEED;
       },
       onProgressChanged:
           (InAppWebViewController controller, int progress) async {
@@ -94,30 +89,23 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
       },
       onLoadStart: (InAppWebViewController controller,
           String url) async {
-        //URLLoad시작
         _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
         if(url.endsWith("/login")) ScreenHodlerController.to.onPressHomeBtn();
+      },
+      onLoadStop: (InAppWebViewController controller, String url) async {
+        ///
+        if(url.endsWith("/dashboard")&&_controller.wvcApiInstance.receivedURL!=null){
+          await _controller.wvcApiInstance.subWebViewModel.webViewController.loadUrl(url:(_controller.wvcApiInstance.receivedURL.endsWith("/board")) ? BOARD_URL : FILE_STORAGE_URL);
+          _controller.wvcApiInstance.receivedURL = null;
+        }
       },
       shouldOverrideUrlLoading:
           (controller, shouldOverrideUrlLoadingRequest) async {
         var url = shouldOverrideUrlLoadingRequest.url;
         var uri = Uri.parse(url);
-        print("오버로딩 URL 체크 : $url");
-        if(url.endsWith("no=undefined&bc=undefined")) {
-          // controller.goBack();
-          return ShouldOverrideUrlLoadingAction.CANCEL;
-        }
-
+        if(url.endsWith("no=undefined&bc=undefined")) return ShouldOverrideUrlLoadingAction.CANCEL;
         return ShouldOverrideUrlLoadingAction.ALLOW;
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
-      },
-      onLoadStop: (InAppWebViewController controller, String url) async {
-        if(url.endsWith("/dashboard")&&_controller.wvcApiInstance.receivedURL!=null){
-          await _controller.wvcApiInstance.subWebViewModel.webViewController.loadUrl(url:(_controller.wvcApiInstance.receivedURL.endsWith("/board")) ? BOARD_URL : FILE_STORAGE_URL);
-          _controller.wvcApiInstance.receivedURL = null;
-        }
-        print("현재 히스토리 : ${await controller.getCopyBackForwardList()}");
-        //리로드 + 체크용도
       },
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");

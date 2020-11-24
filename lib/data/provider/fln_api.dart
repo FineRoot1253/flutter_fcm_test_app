@@ -40,6 +40,7 @@ class FLNApi {
 
   /// notification 그룹 관리용 변수
   List<String> notificationList = List<String>();
+  List<Map<String,String>> notiList = List<Map<String,String>>();
   List<int> idList = List<int>();
 
   ///여기에서 local_notification을 초기화한다.
