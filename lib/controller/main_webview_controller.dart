@@ -63,6 +63,7 @@ class MainWebViewController extends GetxController {
     await wvcApiInstance.fcmInit();
     await wvcApiInstance.flnInit(onSelectNotification);
     wvcApiInstance.ajaxInit();
+    await wvcApiInstance.hiveInit();
     /// FLN + FCM + init END
 
     /// 토큰 재발급 리슨, TODO: 추후 사용 필요시 주석제거
@@ -117,8 +118,7 @@ class MainWebViewController extends GetxController {
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
-      final SendPort sendPort = IsolateNameServer.lookupPortByName(
-          "fcm_background_isolate_return");
+
       Map<String, dynamic> payloadMap = jsonDecode(payload);
 
       if (!(payloadMap["msgType"] == 0)) {
@@ -127,7 +127,9 @@ class MainWebViewController extends GetxController {
       } else {
         wvcApiInstance.flnApiInstance.notificationList.clear();
       }
-      sendPort.send(wvcApiInstance.flnApiInstance.notificationList);
+      print("onSelectNotification : ${wvcApiInstance.sendPort}");
+      wvcApiInstance.sendPort.send(wvcApiInstance.flnApiInstance.notificationList);
+      wvcApiInstance.sendPort.send(wvcApiInstance.flnApiInstance.notiList);
       /// 받은 URL,compCd 업데이트
       wvcApiInstance.receivedURL = payloadMap["URL"];
       wvcApiInstance.compCd = payloadMap["compCd"];
@@ -237,6 +239,7 @@ class MainWebViewController extends GetxController {
                   ? BOARD_URL
                   : FILE_STORAGE_URL);
           wvcApiInstance.receivedURL = null;
+          print("돌아야지");
         }
       });
       ///일반용 리로드 여부 체크 (푸시 알람 터치후 로그인 후 온 상태인지 여부)

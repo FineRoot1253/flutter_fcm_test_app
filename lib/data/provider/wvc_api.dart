@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
+import 'package:fcm_tet_01_1008/data/provider/hive_api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 
 class WVCApi {
 
@@ -28,7 +33,9 @@ class WVCApi {
   final fcmApiInstance = FCMApi();
   final flnApiInstance = FLNApi();
   final ajaxApiInstance = AJAXApi();
-
+  final hiveApiInstance = HiveApi();
+  final SendPort sendPort = IsolateNameServer.lookupPortByName(
+      "fcm_background_isolate_return");
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
@@ -57,7 +64,7 @@ class WVCApi {
   set mainWebViewModel(WebViewModel model){this._mainWebViewModel=model;}
   set subWebViewModel(WebViewModel model){this._subWebViewModel=model;}
 
-
+  Box box;
 
   /// init series logic START
   flnInit(void func(String payload)) async {
@@ -81,8 +88,13 @@ class WVCApi {
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
     fcmApiInstance.backGroundMessagePort.listen((message) {
-      this.flnApiInstance.notificationList=message;
-      print("MAIN ISOLATE : ${this.flnApiInstance.notificationList}");
+      if(message is List<MessageModel>) {
+        this.flnApiInstance.notiList=message;
+        flnApiInstance.msgStrCnt.add("event!");
+      }
+      else this.flnApiInstance.notificationList=message;
+      print("MAIN ISOLATE : ${this.flnApiInstance.notificationList} : ${this.flnApiInstance.notiList.length}");
+
     });
 
     ///  로그인시 토큰 체크용
@@ -91,6 +103,16 @@ class WVCApi {
       print("Push Messaging token: $token");
       this.deviceToken = token;
     });
+
+  }
+  hiveInit() async {
+    try {
+      await hiveApiInstance.init();
+      box = await hiveApiInstance.getBox;
+      flnApiInstance.notiList = await box.get("notiList", defaultValue: []).cast<MessageModel>()??List<MessageModel>();
+    }catch(e,s){
+      print(s);
+    }
   }
     // TODO: ajax 시작에 StreamController.add(),  끝부분엔 isloadDone()을 호출 할 것
   ajaxInit(){
@@ -117,6 +139,7 @@ class WVCApi {
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
     print("\n\n\nonMessage : $message\n\n\n");
+    flnApiInstance.addList(message);
     showItemSnackBar(username: null, message: message);
   }
 
@@ -132,11 +155,6 @@ class WVCApi {
       await subWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource1);
       ScreenHodlerController.to.onPressHomeBtn();
     }
-    //
-    //
-    // (ScreenHodlerController.to.currentIndex==0) ?
-    // await mainWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource1) :
-    // await subWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource1);
 
     await ajaxApiInstance.ajaxCompleter.future;
 
@@ -156,11 +174,5 @@ class WVCApi {
 
     await ajaxApiInstance.ajaxCompleter.future;
   }
-
-
-
-
-
-
 
 }

@@ -38,7 +38,11 @@ dependencies:
   image: ^2.1.18
   flutter_local_notifications: ^2.0.0+1
   fluttertoast: ^7.1.1
+  hive: ^1.4.4+1
+  hive_flutter: ^0.3.1
   path_provider: ^1.6.24
+  intl: ^0.16.1
+  flutter_cached_pdfview: ^0.3.1
 
 dev_dependencies:
   flutter_test:

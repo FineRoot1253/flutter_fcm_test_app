@@ -1,5 +1,7 @@
 import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/notification_drawer_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/material.dart';
@@ -81,7 +83,7 @@ void showItemSnackBar(
                                   wvcApiInstance.compCd = null;
                                   wvcApiInstance.compUserId = null;
                                 }
-
+                                wvcApiInstance.flnApiInstance.removeLastNotification();
                               }else {
                                 await MainWebViewController.to.checkAndReLoadUrl();
                               }

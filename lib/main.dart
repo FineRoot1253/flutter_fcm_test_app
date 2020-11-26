@@ -4,12 +4,16 @@ import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
+import 'package:fcm_tet_01_1008/data/provider/hive_api.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
+
+import 'data/model/message_model.dart';
 
 
 
@@ -25,6 +29,8 @@ class MyApp extends StatelessWidget{
       getPages: routes,
     );
   }
+
+
 }
 
 void main() async {
@@ -84,18 +90,48 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   /// flutter_local_notification을 싱글톤화 해야했다.
   final flnApiInstance = FLNApi();
   final fcmApiInstance = FCMApi();
+  final hiveApiInstance = HiveApi();
+
   final ReceivePort recPort = ReceivePort();
 
+  Box box;
+  if(!fcmApiInstance.isListening) {
+    await hiveApiInstance.init();
+  }
+  box = await hiveApiInstance.getBox;
   /// 리슨은 한번만 해도 되니 bool로 체크 하게끔 isListening 추가
   if (!fcmApiInstance.isListening) {
     IsolateNameServer.registerPortWithName(
         recPort.sendPort, "fcm_background_isolate_return");
-    recPort.listen((message) {
-      flnApiInstance.notificationList = message;
+
+
+    print("FCM ISOLATE : ReceivePort Initialized");
+    recPort.listen((message) async {
+      print("FCM ISOLATE : $message");
+      if(message is MessageModel){
+        flnApiInstance.notiList.removeWhere((element) => element==message);
+        await box.clear();
+        await box.put("notiList",flnApiInstance.notiList);
+      }
+      else flnApiInstance.notificationList = message;
+
       return Future<void>.value();
     });
     fcmApiInstance.isListening = true;
   }
+  List<MessageModel> list = await box.get("notiList", defaultValue: []).cast<MessageModel>()??null;
+  if(list!=null) flnApiInstance.notiList=list;
+
+  flnApiInstance.notiList.add(MessageModel(msgType: message["data"]["msgType"],
+    title: message["data"]["title"],
+    body: message["data"]["body"],
+    compCd: message["data"]["compCd"],
+    url: message["data"]["URL"],
+    userId: message["data"]["userId"],
+    compNm: message["data"]["compNm"],
+  ));
+  await box.clear();
+  await box.put("notiList",flnApiInstance.notiList);
 
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
@@ -147,6 +183,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
   port.send(flnApiInstance.notificationList);
+  port.send(flnApiInstance.notiList);
 
   return Future<void>.value();
 }

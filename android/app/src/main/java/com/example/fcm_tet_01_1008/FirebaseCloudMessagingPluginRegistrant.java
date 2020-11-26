@@ -3,6 +3,7 @@ package com.example.fcm_tet_01_1008;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin;
 import com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin;
+import io.flutter.plugins.pathprovider.PathProviderPlugin;
 
 
 public final class FirebaseCloudMessagingPluginRegistrant{
@@ -12,6 +13,7 @@ public final class FirebaseCloudMessagingPluginRegistrant{
         }
         FirebaseMessagingPlugin.registerWith(registry.registrarFor("io.flutter.plugins.firebasemessaging.FirebaseMessagingPlugin"));
         FlutterLocalNotificationsPlugin.registerWith(registry.registrarFor("com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin"));
+        PathProviderPlugin.registerWith(registry.registrarFor("io.flutter.plugins.pathprovider.PathProviderPlugin"));
     }
 
     private static boolean alreadyRegisteredWith(PluginRegistry registry) {

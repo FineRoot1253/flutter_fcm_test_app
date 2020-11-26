@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 class SubWebViewController extends GetxController{
 
-  static SubWebViewController get to => Get.put(SubWebViewController());
+  static SubWebViewController get to => Get.find();
 
   ScreenHodlerController shController = ScreenHodlerController.to;
 

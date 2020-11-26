@@ -1,25 +1,26 @@
-import 'dart:async';
-
 import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
+import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
 class SubWebViewPage extends StatefulWidget {
   final screenHeight;
-  const SubWebViewPage({Key key, @required this.screenHeight}) : super(key: key);
+
+  const SubWebViewPage({Key key, @required this.screenHeight})
+      : super(key: key);
 
   @override
   _SubWebViewPageState createState() => _SubWebViewPageState();
 }
 
 class _SubWebViewPageState extends State<SubWebViewPage> {
-
   SubWebViewController _controller = SubWebViewController.to;
 
   @override
@@ -28,24 +29,22 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
       reverse: true,
       physics: NeverScrollableScrollPhysics(),
       child: Container(
-        height: Get.height-(widget.screenHeight+Get.height*0.05),
+        height: Get.height - (widget.screenHeight + Get.height * 0.05),
         width: Get.width,
         child: Padding(
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GetBuilder<MainWebViewController>(
-                  builder: (_) =>
-                  (_.progress<1.0)
+                  builder: (_) => (_.progress < 1.0)
                       ? LinearProgressIndicator(
-                    value: _.progress.toDouble(),)
+                          value: _.progress.toDouble(),
+                        )
                       : Container()),
-              Expanded(
-                child: buildSubWebView()
-              ),
+              Expanded(child: buildSubWebView()),
             ],
           ),
         ),
@@ -53,12 +52,11 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
     );
   }
 
-  buildSubWebView(){
+  buildSubWebView() {
     return InAppWebView(
-      gestureRecognizers:
-      <Factory<OneSequenceGestureRecognizer>>[
+      gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
         new Factory<OneSequenceGestureRecognizer>(
-              () => new EagerGestureRecognizer(),
+          () => new EagerGestureRecognizer(),
         ),
       ].toSet(),
       initialUrl: _controller.wvcApiInstance.subWebViewModel.url,
@@ -68,17 +66,18 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
             supportMultipleWindows: true,
           ),
           crossPlatform: InAppWebViewOptions(
-              javaScriptCanOpenWindowsAutomatically: true,
+            javaScriptCanOpenWindowsAutomatically: true,
             clearCache: true,
             debuggingEnabled: true,
             useShouldOverrideUrlLoading: true,
             useOnLoadResource: true,
           )),
-      onWebViewCreated: (InAppWebViewController controller)  {
-        _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
+      onWebViewCreated: (InAppWebViewController controller) {
+        _controller.wvcApiInstance.subWebViewModel.webViewController =
+            controller;
       },
       onLoadResource: (controller, resource) async {
-        if(resource.url.contains("/m_header.js")){
+        if (resource.url.contains("/m_header.js")) {
           await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[1]);
         }
       },
@@ -87,29 +86,62 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
         /// webViewController.isLoadDone은 다이얼로그 중복 Get.back() 을 방지
         MainWebViewController.to.progressChanged((progress / 100));
       },
-      onLoadStart: (InAppWebViewController controller,
-          String url) async {
-        _controller.wvcApiInstance.subWebViewModel.webViewController = controller;
-        if(url.endsWith("/login")) ScreenHodlerController.to.onPressHomeBtn();
+      onLoadStart: (InAppWebViewController controller, String url) async {
+        _controller.wvcApiInstance.subWebViewModel.webViewController =
+            controller;
+        if (url.endsWith("/login")) ScreenHodlerController.to.onPressHomeBtn();
       },
       onLoadStop: (InAppWebViewController controller, String url) async {
         ///
-        if(url.endsWith("/dashboard")&&_controller.wvcApiInstance.receivedURL!=null){
-          await _controller.wvcApiInstance.subWebViewModel.webViewController.loadUrl(url:(_controller.wvcApiInstance.receivedURL.endsWith("/board")) ? BOARD_URL : FILE_STORAGE_URL);
+        if (url.endsWith("/dashboard") &&
+            _controller.wvcApiInstance.receivedURL != null) {
+          await _controller.wvcApiInstance.subWebViewModel.webViewController
+              .loadUrl(
+                  url: (_controller.wvcApiInstance.receivedURL
+                          .endsWith("/board"))
+                      ? BOARD_URL
+                      : FILE_STORAGE_URL);
           _controller.wvcApiInstance.receivedURL = null;
         }
+
       },
       shouldOverrideUrlLoading:
           (controller, shouldOverrideUrlLoadingRequest) async {
         var url = shouldOverrideUrlLoadingRequest.url;
         var uri = Uri.parse(url);
-        if(url.endsWith("no=undefined&bc=undefined")) return ShouldOverrideUrlLoadingAction.CANCEL;
+        print("오버로딩 체크 : $url");
+        if (url.endsWith("no=undefined&bc=undefined"))
+          return ShouldOverrideUrlLoadingAction.CANCEL;
+
+        if (url.endsWith(".pdf")) {
+          print("이거 왜안대");
+
+          Get.defaultDialog(
+              content: Container(
+                  height: Get.height * 0.5,
+                  width: Get.width * 0.5,
+                  child: PDF().cachedFromUrl(url,
+                      placeholder: (prog) => Center(
+                        child: CircularProgressIndicator(
+                          value: prog / 100,
+                        ),
+                      ))));
+          return ShouldOverrideUrlLoadingAction.CANCEL;
+        }
         return ShouldOverrideUrlLoadingAction.ALLOW;
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
       },
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");
-        if(consoleMessage.message=="logout") ScreenHodlerController.to.onPressHomeBtn();
+        if (consoleMessage.message == "logout")
+          ScreenHodlerController.to.onPressHomeBtn();
+      },
+      onCreateWindow: (controller, createWindowRequest) async {
+        ScreenHodlerController.to.changeWebViewModel(
+            WebViewModel(
+                url: "about:blank", windowId: createWindowRequest.windowId),
+            2);
+        return true;
       },
     );
   }
