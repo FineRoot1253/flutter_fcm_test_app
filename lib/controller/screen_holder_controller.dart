@@ -30,7 +30,7 @@ class ScreenHodlerController extends GetxController {
 
 
   void changeWebViewModel(WebViewModel model, int index){
-    wvcApiInstance.subWebViewModel=model;
+    wvcApiInstance.addSubWebViewModel(model);
     subWebViewPages.add(SubWebViewPage(screenHeight: screenHeight));
     setIndexedStack=index;
   }
@@ -44,6 +44,10 @@ class ScreenHodlerController extends GetxController {
     subWebViewPages.clear();
   }
 
+  void onFileurl() {
+    wvcApiInstance.removeLastSubWebViewModel();
+    setIndexedStack=1;
+  }
 }
 
 class NotificationToggleController extends GetxController{
@@ -55,9 +59,7 @@ class NotificationToggleController extends GetxController{
 
   onInitiate(){
     wvcApiInstance.flnApiInstance.msgSub=wvcApiInstance.flnApiInstance.msgStream.listen((event) {
-      // print(wvcApiInstance.sendPort);
-      // wvcApiInstance.sendPort.send(wvcApiInstance.flnApiInstance.notiList);
-      if(wvcApiInstance.flnApiInstance.notiList.length>0) drawerToggle=false;
+      if(wvcApiInstance.flnApiInstance.notiListContainer.length>0&&event != "remove") drawerToggle=false;
       else drawerToggle=true;
     });
   }

@@ -37,11 +37,11 @@ class NotificationDrawerController extends GetxController{
 
   onUpdate()async{
     ///list set
-    print(wvcApiInstance.flnApiInstance.notiList);
-    mainNotiList = wvcApiInstance.flnApiInstance.notiList;
-    boardNotiList = wvcApiInstance.flnApiInstance.notiList.where((element) => element.msgType=="1").toList();
-    fileNotiList = wvcApiInstance.flnApiInstance.notiList.where((element) => element.msgType=="2").toList();
-    await wvcApiInstance.box.put("notiList", wvcApiInstance.flnApiInstance.notiList);
+    print(wvcApiInstance.flnApiInstance.notiListContainer);
+    mainNotiList = wvcApiInstance.flnApiInstance.notiListContainer;
+    boardNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="1").toList();
+    fileNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="2").toList();
+    await wvcApiInstance.spApiInstance.setList(wvcApiInstance.flnApiInstance.notiListContainer);
   }
 
   addList(Map<String,dynamic> message){

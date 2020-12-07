@@ -3,17 +3,18 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
+import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
-import 'package:fcm_tet_01_1008/data/provider/hive_api.dart';
+import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
-
-import 'data/model/message_model.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 
@@ -38,6 +39,10 @@ void main() async {
   /// 그럴땐 이것을 추가
   WidgetsFlutterBinding.ensureInitialized();
 
+  /// 파일 다운로더 플러그인,  isolate로 동작, debug true시 console log print
+  await FlutterDownloader.initialize(debug: true);
+
+  await Permission.storage.request();
   /// 최상위에서 위젯을 호출하기 전에 fcm_background_msg_isolate에 접근
   /// 아래의 IsolateNameServer는 static, isolate간 sendport 공유를 위해 존재
   /// registerPortWithName은 공유할 sendport 등록
@@ -51,25 +56,25 @@ void main() async {
   runApp(MyApp());
 }
 
-groupSummaryNotification(message,
+groupSummaryNotification(model,
     {String summaryText,
       int total,
       String groupTitle,
       String groupContent,
-      List<String> lines}) async {
+      List<MessageModel> lines,}) async {
   final flnApiInstance = FLNApi();
-
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
       setAsGroupSummary: true,
       groupKey: "GROUP_KEY",
-      styleInformation: InboxStyleInformation(lines,
+      styleInformation: InboxStyleInformation(List<String>.from(lines.map((e) => e.msgType).toList()),
           contentTitle: summaryText, summaryText: '$total개의 안 읽은 알림'),
       color: Colors.blue.shade800,
       importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("@mipmap/app_icon"),
+      channelShowBadge: (flnApiInstance.isSupported),
+      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
-  // flnApiInstance.flnPlugin.cancel()
+
   await flnApiInstance.flnPlugin.show(
       0,
       groupTitle ?? "group noti title",
@@ -77,10 +82,9 @@ groupSummaryNotification(message,
       NotificationDetails(
           android: _androidPlatformChannelSpecifics,
           iOS: IOSNotificationDetails()),
-      payload:  jsonEncode(encode(url: message["data"]["URL"],
-          msgId: 0.toString(),
-          compCd: message["data"]["compCd"]
-      )));
+      payload:  jsonEncode(model.toMap()));
+  print("printDone");
+
 }
 
 /// TOP_Level BackgroundMessageHandler
@@ -88,59 +92,52 @@ groupSummaryNotification(message,
 Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   /// 여기에서 한번 더 flutter_local_notification인스턴스에 접근할 필요가 있어서
   /// flutter_local_notification을 싱글톤화 해야했다.
+  try{
   final flnApiInstance = FLNApi();
   final fcmApiInstance = FCMApi();
-  final hiveApiInstance = HiveApi();
+  final spApiInstance = SPApi();
 
   final ReceivePort recPort = ReceivePort();
 
-  Box box;
-  if(!fcmApiInstance.isListening) {
-    await hiveApiInstance.init();
-  }
-  box = await hiveApiInstance.getBox;
+  /// SP init
+  await spApiInstance.init();
+
+  MessageModel model;
+  
   /// 리슨은 한번만 해도 되니 bool로 체크 하게끔 isListening 추가
-  if (!fcmApiInstance.isListening) {
+    if (!fcmApiInstance.isListening) {
+      flnApiInstance.isSupported= await FlutterAppBadger.isAppBadgeSupported();
     IsolateNameServer.registerPortWithName(
         recPort.sendPort, "fcm_background_isolate_return");
-
-
+    // await flnApiInstance.initFLN();
     print("FCM ISOLATE : ReceivePort Initialized");
+
     recPort.listen((message) async {
       print("FCM ISOLATE : $message");
-      if(message is MessageModel){
-        flnApiInstance.notiList.removeWhere((element) => element==message);
-        await box.clear();
-        await box.put("notiList",flnApiInstance.notiList);
-      }
-      else flnApiInstance.notificationList = message;
+      flnApiInstance.backGroundNotiList = message;
 
       return Future<void>.value();
     });
-    fcmApiInstance.isListening = true;
   }
-  List<MessageModel> list = await box.get("notiList", defaultValue: []).cast<MessageModel>()??null;
-  if(list!=null) flnApiInstance.notiList=list;
 
-  flnApiInstance.notiList.add(MessageModel(msgType: message["data"]["msgType"],
-    title: message["data"]["title"],
-    body: message["data"]["body"],
-    compCd: message["data"]["compCd"],
-    url: message["data"]["URL"],
-    userId: message["data"]["userId"],
-    compNm: message["data"]["compNm"],
-  ));
-  await box.clear();
-  await box.put("notiList",flnApiInstance.notiList);
 
+
+    List<MessageModel> list = spApiInstance.getList;
+  if(list!=null) flnApiInstance.notiListContainer=list;
+
+  flnApiInstance.addList(message);
+  await spApiInstance.setList(flnApiInstance.notiListContainer);
+  model=flnApiInstance.notiListContainer.last;
+  print(!(flnApiInstance.isSupported));
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
       groupKey: "GROUP_KEY",
-      styleInformation: BigTextStyleInformation(message["data"]["body"],
-          contentTitle: message["data"]["title"],
-          summaryText: message["data"]["title"] + " 알림"),
+      styleInformation: BigTextStyleInformation(model.body,
+          contentTitle: model.title,
+          summaryText: model.title + " 알림"),
       color: Colors.blue.shade800,
       importance: Importance.max,
+      channelShowBadge: (flnApiInstance.isSupported),
       largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
@@ -150,50 +147,38 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
       iOS: _iOSPlatformChannelSpecifics);
 
   /// notification ID
-  int msgId = int.tryParse(message["data"]["msgType"].toString()) ?? 0;
+  int msgId = int.tryParse(model.msgType) ?? 0;
 
   /// 게시판, 서류함 기타등등 메시지 종류별로 하나씩만 리스트에 넣기 위해 if문으로 중복을 체크
-  if (!flnApiInstance.notificationList
-      .contains("${message["data"]["msgType"]}")) {
-    flnApiInstance.notificationList.add("${message["data"]["msgType"]}");
+  if (!flnApiInstance.backGroundNotiList.map((e) => e.msgType).toList().contains(model.msgType)) {
+    flnApiInstance.backGroundNotiList.add(model);
   }
 
-  /// 이런식으로 map을 만들어 전달, onseletction에서 간단하게 decode하여 사용가능
-  Map<String, dynamic> payloadMap = encode(
-      url: message["data"]["URL"],
-      msgId: msgId.toString(),
-      compCd: message["data"]["compCd"]);
-
   /// 앞서 선언, 초기화 한 토대로 notification을 띄움
-  await flnApiInstance.flnPlugin.show(msgId, message["data"]["title"],
-      message["data"]["body"], _platformChannelSpecifics,
-      payload: jsonEncode(payloadMap));
 
-  /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
-  await groupSummaryNotification(message,
-      summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
-      groupTitle: MESSAGE_TYPE_LIST[msgId],
-      groupContent: "${MESSAGE_TYPE_LIST[msgId]} 관련 알림이 도착해있습니다",
-      total: flnApiInstance.notificationList.length,
-      lines: flnApiInstance.notificationList);
+    await flnApiInstance.flnPlugin.show(msgId, model.title,
+      model.body, _platformChannelSpecifics,
+      payload: jsonEncode(model.toMap()));
+    /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
+    await groupSummaryNotification(model,
+        summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
+        groupTitle: MESSAGE_TYPE_LIST[msgId],
+        groupContent: "${MESSAGE_TYPE_LIST[msgId]} 관련 알림이 도착해있습니다",
+        total: flnApiInstance.notiListContainer.length,
+        lines: flnApiInstance.backGroundNotiList);
 
+  fcmApiInstance.isListening = true;
+  FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
   /// 이 메서드는 isolate domain -> 이 메서드 속 resource가 공유안됨
   /// 여기서는 앞서 등록한 sendport를 가져와 메시지를 send
   final SendPort port =
   IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
-  port.send(flnApiInstance.notificationList);
-  port.send(flnApiInstance.notiList);
+  port.send({"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
 
   return Future<void>.value();
-}
-
-Map<String, dynamic> encode(
-    {@required String url, @required String compCd, @required String msgId}) {
-  Map<String, dynamic> payloadMap = Map<String, dynamic>();
-  payloadMap["URL"] = url ?? null;
-  payloadMap["msgId"] = msgId ?? null;
-  payloadMap["compCd"] = compCd ?? null;
-
-  return payloadMap;
+  }catch(e,s){
+    print(e);
+    print(s);
+  }
 }

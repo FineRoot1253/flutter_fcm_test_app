@@ -7,35 +7,36 @@ import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
-import 'package:fcm_tet_01_1008/data/provider/hive_api.dart';
+import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
+import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:get/get.dart';
-import 'package:hive/hive.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class WVCApi {
-
   /// singleton logic START
   static WVCApi _instance;
 
-  WVCApi._internal(){
+  WVCApi._internal() {
     _instance = this;
   }
 
   factory WVCApi() => _instance ?? WVCApi._internal();
+
   /// singleton logic END
-
 ////////////////////////////////////////////////////////////////////////////////
-
   /// Api instances
   final fcmApiInstance = FCMApi();
   final flnApiInstance = FLNApi();
   final ajaxApiInstance = AJAXApi();
-  final hiveApiInstance = HiveApi();
-  final SendPort sendPort = IsolateNameServer.lookupPortByName(
-      "fcm_background_isolate_return");
+  final spApiInstance = SPApi();
+
+  // final SendPort sendPort = IsolateNameServer.lookupPortByName(
+  //     "fcm_background_isolate_return");
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
@@ -56,20 +57,23 @@ class WVCApi {
 
   /// WebViewModel set
   WebViewModel _mainWebViewModel;
-  WebViewModel _subWebViewModel;
+  List<WebViewModel> _subWebViewModel;
 
   WebViewModel get mainWebViewModel => _mainWebViewModel;
-  WebViewModel get subWebViewModel => _subWebViewModel;
+  List<WebViewModel> get subWebViewModel => _subWebViewModel;
+  set mainWebViewModel(WebViewModel model) {this._mainWebViewModel = model;}
+  addSubWebViewModel(WebViewModel model) => this._subWebViewModel.add(model);
+  removeLastSubWebViewModel() => this._subWebViewModel.removeLast();
+  removeAtSubWebViewModel(int index) => this._subWebViewModel.removeAt(index);
+  clearSubWebViewModel() => this._subWebViewModel.clear();
 
-  set mainWebViewModel(WebViewModel model){this._mainWebViewModel=model;}
-  set subWebViewModel(WebViewModel model){this._subWebViewModel=model;}
-
-  Box box;
 
   /// init series logic START
   flnInit(void func(String payload)) async {
-    flnApiInstance.initFLN();
-    await flnApiInstance.flnPlugin.initialize(flnApiInstance.initializationSettings,onSelectNotification: func);
+    await flnApiInstance.initFLN();
+    await flnApiInstance.flnPlugin.initialize(
+        flnApiInstance.initializationSettings,
+        onSelectNotification: func);
   }
 
   fcmInit() async {
@@ -80,6 +84,7 @@ class WVCApi {
       onBackgroundMessage: myBackgroundMessageHandler,
     );
     fcmApiInstance.fcmInitialize();
+
     /// fcmApiInstance.backGroundMessagePort
     /// fcm서버에서 message받음 1)
     /// 아래 onData 발동됨 2)
@@ -88,13 +93,13 @@ class WVCApi {
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
     fcmApiInstance.backGroundMessagePort.listen((message) {
-      if(message is List<MessageModel>) {
-        this.flnApiInstance.notiList=message;
-        flnApiInstance.msgStrCnt.add("event!");
-      }
-      else this.flnApiInstance.notificationList=message;
-      print("MAIN ISOLATE : ${this.flnApiInstance.notificationList} : ${this.flnApiInstance.notiList.length}");
-
+      if (message["TOTAL"] != null)
+        this.flnApiInstance.notiListContainer = message["TOTAL"];
+      if (message["BACKGROUND"] != null)
+        this.flnApiInstance.backGroundNotiList = message["BACKGROUND"];
+      print(
+          "MAIN ISOLATE : ${this.flnApiInstance.backGroundNotiList.length} : ${this.flnApiInstance.notiListContainer.length}");
+      flnApiInstance.msgStrCnt.add("event!");
     });
 
     ///  로그인시 토큰 체크용
@@ -103,29 +108,27 @@ class WVCApi {
       print("Push Messaging token: $token");
       this.deviceToken = token;
     });
+  }
 
+  spInit() async {
+    await spApiInstance.init();
+    flnApiInstance.notiListContainer = spApiInstance.getList??List<MessageModel>();
   }
-  hiveInit() async {
-    try {
-      await hiveApiInstance.init();
-      box = await hiveApiInstance.getBox;
-      flnApiInstance.notiList = await box.get("notiList", defaultValue: []).cast<MessageModel>()??List<MessageModel>();
-    }catch(e,s){
-      print(s);
-    }
+
+  // TODO: ajax 시작에 StreamController.add(),  끝부분엔 isloadDone()을 호출 할 것
+  ajaxInit() {
+    ajaxApiInstance.ajaxCompleter = Completer();
+    ajaxApiInstance.ajaxStreamSubScription =
+        ajaxApiInstance.ajaxStream.listen(_ajaxEventHandler);
   }
-    // TODO: ajax 시작에 StreamController.add(),  끝부분엔 isloadDone()을 호출 할 것
-  ajaxInit(){
-    ajaxApiInstance.ajaxCompleter=Completer();
-    ajaxApiInstance.ajaxStreamSubScription = ajaxApiInstance.ajaxStream.listen(_ajaxEventHandler);
-  }
+
   /// init logic series END
   /// hiveDB는 컨트롤러 마다 필요 여부가 다르므로 컨트롤러 별로 알아서 할 것
 
-
   /// AJAX eventHandler
-  void _ajaxEventHandler(AjaxRequest req){
-    if(req.readyState==AjaxRequestReadyState.DONE) ajaxApiInstance.ajaxCompleter.complete(req.readyState);
+  void _ajaxEventHandler(AjaxRequest req) {
+    if (req.readyState == AjaxRequestReadyState.DONE)
+      ajaxApiInstance.ajaxCompleter.complete(req.readyState);
   }
 
   /// Resume + Launch 용 콜백
@@ -140,7 +143,14 @@ class WVCApi {
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
     print("\n\n\nonMessage : $message\n\n\n");
     flnApiInstance.addList(message);
-    showItemSnackBar(username: null, message: message);
+    try {
+      print("폰 지원 여부 : ${flnApiInstance.isSupported}");
+      if (flnApiInstance.isSupported) FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
+      showItemSnackBar(username: null, message: message);
+    }catch(e,s){
+      print(e);
+      print(s);
+    }
   }
 
   logoutProc() async {
@@ -150,14 +160,16 @@ class WVCApi {
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=$deviceToken");
        """;
-    if(ScreenHodlerController.to.currentIndex==0) await mainWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource1);
-    else{
-      await subWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource1);
+    if (ScreenHodlerController.to.currentIndex == 0)
+      await mainWebViewModel.webViewController
+          .evaluateJavascript(source: autoLoginProcSource1);
+    else {
+      await subWebViewModel[0].webViewController
+          .evaluateJavascript(source: autoLoginProcSource1);
       ScreenHodlerController.to.onPressHomeBtn();
     }
 
     await ajaxApiInstance.ajaxCompleter.future;
-
   }
 
   initLogoutProc(String btnId) async {
@@ -168,11 +180,12 @@ class WVCApi {
       });
        """;
 
-    (ScreenHodlerController.to.currentIndex==0) ?
-    await mainWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource2) :
-    await subWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource2);
+    (ScreenHodlerController.to.currentIndex == 0)
+        ? await mainWebViewModel.webViewController
+            .evaluateJavascript(source: autoLoginProcSource2)
+        : await subWebViewModel[0].webViewController
+            .evaluateJavascript(source: autoLoginProcSource2);
 
     await ajaxApiInstance.ajaxCompleter.future;
   }
-
 }

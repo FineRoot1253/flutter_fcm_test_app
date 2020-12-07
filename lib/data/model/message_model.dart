@@ -1,33 +1,21 @@
-import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 
-
-part 'message_model_adapter.dart';
-
-@HiveType(typeId: 0, adapterName: "MessageModelListAdapter")
 class MessageModel {
 
-  @HiveField(0)
   String _msgType;
 
-  @HiveField(1)
   String _title;
 
-  @HiveField(2)
   String _body;
 
-  @HiveField(3)
   String _url;
 
-  @HiveField(4)
   String _userId;
 
-  @HiveField(5)
   String _compCd;
 
-  @HiveField(6)
   String _compNm;
 
-  @HiveField(7)
   String _receivedDate;
 
   MessageModel(
@@ -96,6 +84,16 @@ class MessageModel {
   set receivedDate(receivedDate) {
     this._receivedDate = receivedDate;
   }
+
+  MessageModel.fromJson(Map<String, dynamic> map)
+      : _msgType = map["msgType"] ?? "0",
+        _title = map["title"] ?? "Default_Title_Text",
+        _body = map["body"] ?? "Default_Body_Text",
+        _url = map["url"] ?? map["URL"] ??  "/",
+        _userId = map["userId"] ?? null,
+        _compCd = map["compCd"] ?? null,
+        _compNm = map["compNm"] ?? "Default_Company_Text",
+        _receivedDate = map["receivedDate"] ?? DateFormat("yyyy-MM-dd hh:mm:ss").format(DateTime.now());
 
   toMap() {
     return {

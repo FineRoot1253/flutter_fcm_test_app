@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
 import 'package:fcm_tet_01_1008/controller/notification_drawer_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
@@ -7,6 +8,7 @@ import 'package:fcm_tet_01_1008/screen/widgets/drawer.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
 class ScreenHolder extends StatefulWidget {
@@ -18,7 +20,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   bool isTimerRunnting = false;
 
   ScreenHodlerController _controller =
-      Get.put(ScreenHodlerController());
+  Get.put(ScreenHodlerController());
   NotificationToggleController drawerToggleController=Get.put(NotificationToggleController());
   NotificationDrawerController ndc = Get.put(NotificationDrawerController());
   SubWebViewController swc = Get.put(SubWebViewController());
@@ -26,7 +28,8 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   @override
   void initState() {
     // TODO: implement initState
-  WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+
     super.initState();
   }
   @override
@@ -37,13 +40,11 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state)async {
-    // TODO: implement didChangeAppLifecycleState
-    // print("현재 APP LIFE CYCLE : $state");
+    print("현재 AppLifecycleState : $state");
+    if(state == AppLifecycleState.inactive)
+      await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
 
-    if(state == AppLifecycleState.inactive){
-      print("현재 APP LIFE CYCLE : ${_controller.wvcApiInstance.flnApiInstance.notiList}");
-     await _controller.wvcApiInstance.box.put("notiList",_controller.wvcApiInstance.flnApiInstance.notiList);
-    }
+
     super.didChangeAppLifecycleState(state);
   }
   @override
@@ -62,76 +63,76 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
               resizeToAvoidBottomInset: false,
               resizeToAvoidBottomPadding: false,
               floatingActionButtonLocation:
-                  FloatingActionButtonLocation.centerDocked,
+              FloatingActionButtonLocation.centerDocked,
               bottomNavigationBar: _.isSignin
                   ? BottomAppBar(
-                      shape: _.isSignin ? CircularNotchedRectangle() : null,
-                      clipBehavior: Clip.antiAliasWithSaveLayer,
-                      child: Container(
-                        height: (Get.height * 0.05),
-                        color: Colors.white,
-                        alignment: Alignment.centerLeft,
-                        padding: EdgeInsets.only(left: 10.0),
-                        child: IconButton(
-                          color: Colors.black,
-                          disabledColor: Colors.black54,
-                          onPressed: () {
-                                _.key.currentState.openDrawer();
-                                drawerToggleController.drawerToggle=true;
-                            },
-                          icon: GetBuilder<NotificationToggleController>(
-                            initState: (_){
-                              drawerToggleController.onInitiate();
-                              drawerToggleController.listCheckedOut = (_controller.wvcApiInstance.flnApiInstance.notiList.length > 0) ?
-                              false:
-                              true;
-                            },
-                            builder:(_){
-                              return Stack(children: [
-                                Icon(Icons.notifications),
-                                (!(_.listCheckedOut))
-                                    ? Positioned(
-                                    right: 0.0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.red,
-                                      ),
-                                      child: Container(
-                                        margin: EdgeInsets.all(2.0),
-                                        child: Text(
-                                          "${_controller.wvcApiInstance.flnApiInstance.notiList.length}",
-                                          style: TextStyle(fontSize: 8),
-                                        ),
-                                      ),
-                                    ))
-                                    : Container()
-                              ]);
-                            } ,
-                          ),
-                        ),
-                      ))
+                  shape: _.isSignin ? CircularNotchedRectangle() : null,
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  child: Container(
+                    height: (Get.height * 0.05),
+                    color: Colors.white,
+                    alignment: Alignment.centerLeft,
+                    padding: EdgeInsets.only(left: 10.0),
+                    child: IconButton(
+                      color: Colors.black,
+                      disabledColor: Colors.black54,
+                      onPressed: () {
+                        _.key.currentState.openDrawer();
+                        drawerToggleController.drawerToggle=true;
+                      },
+                      icon: GetBuilder<NotificationToggleController>(
+                        initState: (_){
+                          drawerToggleController.onInitiate();
+                          drawerToggleController.listCheckedOut = (_controller.wvcApiInstance.flnApiInstance.notiListContainer.length > 0) ?
+                          false:
+                          true;
+                        },
+                        builder:(_){
+                          return Stack(children: [
+                            Icon(Icons.notifications),
+                            (!(_.listCheckedOut))
+                                ? Positioned(
+                                right: 0.0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.red,
+                                  ),
+                                  child: Container(
+                                    margin: EdgeInsets.all(2.0),
+                                    child: Text(
+                                      "${_controller.wvcApiInstance.flnApiInstance.notiListContainer.length}",
+                                      style: TextStyle(fontSize: 8),
+                                    ),
+                                  ),
+                                ))
+                                : Container()
+                          ]);
+                        } ,
+                      ),
+                    ),
+                  ))
                   : BottomAppBar(),
               floatingActionButton: _.isSignin
                   ? Container(
-                      height: Get.width * 0.12,
-                      width: Get.width * 0.12,
-                      child: FloatingActionButton(
-                        child: Container(
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                  image: Image.asset(
-                                "assets/images/app_icon.png",
-                                fit: BoxFit.cover,
-                                isAntiAlias: true,
-                              ).image)),
-                        ),
-                        onPressed: _.onPressHomeBtn,
-                      ),
-                    )
+                height: Get.width * 0.12,
+                width: Get.width * 0.12,
+                child: FloatingActionButton(
+                  child: Container(
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        image: DecorationImage(
+                            image: Image.asset(
+                              "assets/images/app_icon.png",
+                              fit: BoxFit.cover,
+                              isAntiAlias: true,
+                            ).image)),
+                  ),
+                  onPressed: _.onPressHomeBtn,
+                ),
+              )
                   : FloatingActionButton(
-                      backgroundColor: Colors.transparent, elevation: 0.0),
+                  backgroundColor: Colors.transparent, elevation: 0.0),
               body: IndexedStack(
                 index: _.currentIndex,
                 children: [
@@ -149,6 +150,38 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   }
 
   Future<bool> _willPopCallBack() async {
+    print("현재 뷰 인덱스 : ${_controller.currentIndex}");
+    if(_controller.currentIndex==0) {
+      if(await _controller.wvcApiInstance.mainWebViewModel.webViewController.canGoBack()){
+
+        WebHistory wh =await _controller.wvcApiInstance.mainWebViewModel.webViewController.getCopyBackForwardList();
+        if(wh.currentIndex>1) {
+          await _controller.wvcApiInstance.mainWebViewModel.webViewController.goBack();
+          return false;
+        }
+
+      }
+    } else if(_controller.currentIndex==1){
+      print("확인 : ${await _controller.wvcApiInstance.subWebViewModel[0].webViewController.getCopyBackForwardList()}");
+      if(await _controller.wvcApiInstance.subWebViewModel[0].webViewController.canGoBack()) {
+        await SessionStorage(_controller.wvcApiInstance.subWebViewModel[0].webViewController).setItem(key: "loginUserForm",value: _controller.wvcApiInstance.subWebViewModel[0].ssItem);
+        await _controller.wvcApiInstance.subWebViewModel[0].webViewController
+            .goBack();
+        return false;
+      }else{
+        _controller.onPressHomeBtn();
+        return false;
+      }
+    }else if(_controller.currentIndex==2) {
+      print("확인 : ${await _controller.wvcApiInstance.subWebViewModel[1].webViewController.getCopyBackForwardList()}");
+      print("세션 스토리지 검증 : ${await SessionStorage(_controller.wvcApiInstance.subWebViewModel[1].webViewController).getItem(key: "loginUserForm")}");
+      _controller.onFileurl();
+      return false;
+    }
+    else {
+      _controller.onPressHomeBtn();
+      return false;
+    }
     if (Get.routing.route.isFirst) {
       if (!isTimerRunnting) {
         startTimer();

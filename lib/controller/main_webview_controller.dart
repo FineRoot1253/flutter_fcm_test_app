@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 import 'dart:ui';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
@@ -35,6 +35,9 @@ class MainWebViewController extends GetxController {
   /// 로그인 체크 변수, 로그인 환영 메시지 호출 여부
   bool isSignin = false;
 
+  /// Error 체크 변수
+  bool isError = false;
+
   /// 웹뷰 옵션
   InAppWebViewGroupOptions webViewGroupOptions;
 
@@ -48,9 +51,8 @@ class MainWebViewController extends GetxController {
   ///  플러그인에 onRefreshToken이 스트림으로 되어있고
   ///  사용을 할때는 아래의 StreamSubscription에 리슨을 걸어주면
   ///  알아서 2가지 상황에 재발급을 받는다.
-  // StreamSubscription refreshing;
 
-  /// view에서 로그인, 로그아웃 체크용도
+  ///  view에서 로그인, 로그아웃 체크용도
   checkSignin(String currentURL) => _checkSignin(currentURL);
 
   ///progress 변경시 호출   TODO 자체 연산
@@ -58,12 +60,12 @@ class MainWebViewController extends GetxController {
 
   /// view initstate에서 호출용
   initNotifications() async {
-    /// TODO : WVCApi에 정의한 init들을 여기서 선언 할 것
+   try{ /// TODO : WVCApi에 정의한 init들을 여기서 선언 할 것
     /// FLN + FCM + AJAX init START
     await wvcApiInstance.fcmInit();
     await wvcApiInstance.flnInit(onSelectNotification);
     wvcApiInstance.ajaxInit();
-    await wvcApiInstance.hiveInit();
+    await wvcApiInstance.spInit();
     /// FLN + FCM + init END
 
     /// 토큰 재발급 리슨, TODO: 추후 사용 필요시 주석제거
@@ -85,6 +87,8 @@ class MainWebViewController extends GetxController {
             supportMultipleWindows: true
         ),
         crossPlatform: InAppWebViewOptions(
+          horizontalScrollBarEnabled: false,
+          verticalScrollBarEnabled: false,
           javaScriptCanOpenWindowsAutomatically: true,
           clearCache: true,
           debuggingEnabled: true,
@@ -95,8 +99,13 @@ class MainWebViewController extends GetxController {
     );
     /// WebViewGroupOptions init END ///////////////////////////////////////////
 
-    return Future<void>.value();
+    print("초기화 완료");
 
+    return Future.value(1);
+}catch(e ,s){
+     print(e);
+     print(s);
+   }
   }
   /// 웹뷰 옵션 설정
   webViewGroupOptionSetter(bool isSignin){
@@ -105,6 +114,8 @@ class MainWebViewController extends GetxController {
             supportMultipleWindows: true
         ),
         crossPlatform: InAppWebViewOptions(
+          horizontalScrollBarEnabled: false,
+          verticalScrollBarEnabled: false,
           javaScriptCanOpenWindowsAutomatically: true,
           clearCache: true,
           debuggingEnabled: true,
@@ -119,34 +130,51 @@ class MainWebViewController extends GetxController {
   /// payload 체크용
   Future onSelectNotification(String payload) async {
 
-      Map<String, dynamic> payloadMap = jsonDecode(payload);
+    try{
+      MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
 
-      if (!(payloadMap["msgType"] == 0)) {
-        wvcApiInstance.flnApiInstance.notificationList
-            .removeWhere((element) => element == payloadMap["msgType"]);
-      } else {
-        wvcApiInstance.flnApiInstance.notificationList.clear();
-      }
-      print("onSelectNotification : ${wvcApiInstance.sendPort}");
-      wvcApiInstance.sendPort.send(wvcApiInstance.flnApiInstance.notificationList);
-      wvcApiInstance.sendPort.send(wvcApiInstance.flnApiInstance.notiList);
-      /// 받은 URL,compCd 업데이트
-      wvcApiInstance.receivedURL = payloadMap["URL"];
-      wvcApiInstance.compCd = payloadMap["compCd"];
-      wvcApiInstance.compUserId = payloadMap["userId"];
-      // /// loginCheck 먼저하고 재로그인
-      await _checkSignin(
-          await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+    if (!(msg.msgType == "0")) {
+      wvcApiInstance.flnApiInstance.backGroundNotiList
+          .removeWhere((element) => element.msgType == msg.msgType);
+      print(msg);
+      print(wvcApiInstance.flnApiInstance.notiListContainer.lastIndexWhere((e) => onSelCallBackValidate(e,msg)));
+      wvcApiInstance.flnApiInstance.notiListContainer.removeAt(wvcApiInstance.flnApiInstance.notiListContainer.lastIndexWhere((e) => onSelCallBackValidate(e,msg)));
+    } else {
+      /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
+      wvcApiInstance.flnApiInstance.notiListContainer.removeWhere((element) => wvcApiInstance.flnApiInstance.backGroundNotiList.contains(element));
+      wvcApiInstance.flnApiInstance.backGroundNotiList.clear();
+    }
 
-      /// 리로드 체크
-      if (ScreenHodlerController.to.currentIndex == 1) {
-        ScreenHodlerController.to.onPressHomeBtn();
-      }
-      print("로그인 여부 : $isSignin");
-      if (isSignin) await checkAndReLoadUrl();
+      IsolateNameServer.lookupPortByName(
+          "fcm_background_isolate_return").send(wvcApiInstance.flnApiInstance.backGroundNotiList);
+    /// 받은 URL,compCd 업데이트
+    wvcApiInstance.receivedURL = msg.url;
+    wvcApiInstance.compCd = msg.compCd;
+    wvcApiInstance.compUserId = msg.userId;
+    /// loginCheck 먼저하고 재로그인
+    await _checkSignin(
+        await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
 
+    /// 리로드 체크
+    if (ScreenHodlerController.to.currentIndex == 1) {
+      ScreenHodlerController.to.onPressHomeBtn();
+    }
+    if (isSignin) await checkAndReLoadUrl();
+    }catch(e,s){
+      print(e);
+      print(s);
+    }
 
   }
+
+  onSelCallBackValidate(MessageModel element,MessageModel msg) =>
+      element.title == msg.title &&
+      element.body == msg.body &&
+      element.url == msg.url &&
+      element.msgType == msg.msgType &&
+      element.userId== msg.userId &&
+      element.compCd== msg.compCd &&
+      element.compNm== msg.compNm;
 
   _checkSignin(String currentURL) async {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
@@ -217,12 +245,14 @@ class MainWebViewController extends GetxController {
       xhttp.send("devToken=${wvcApiInstance.deviceToken}");
        """;
 
-      await wvcApiInstance.mainWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource);
-      await wvcApiInstance.ajaxApiInstance.ajaxCompleter.future;// ajax 결과 나온 상태
-      wvcApiInstance.ssItem = await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).getItem(key: "loginUserForm");
+    await wvcApiInstance.mainWebViewModel.webViewController.evaluateJavascript(source: autoLoginProcSource);
+    await wvcApiInstance.ajaxApiInstance.ajaxCompleter.future;// ajax 결과 나온 상태
+    wvcApiInstance.ssItem = await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).getItem(key: "loginUserForm");
+    if(wvcApiInstance.ssItem!=null){
       wvcApiInstance.procType = wvcApiInstance.ssItem["procType"].toString();
-      if(wvcApiInstance.ssItem!=null) await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+ ((wvcApiInstance.ssItem["procType"]==2 ) ? MAIN_URL_LIST[0] : MAIN_URL_LIST[1]));
-      await checkSignin(await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+      await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+ ((wvcApiInstance.ssItem["procType"]==2 ) ? MAIN_URL_LIST[0] : MAIN_URL_LIST[1]));
+    }
+    await checkSignin(await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
   }
 
   shouldWebViewOptionChange() async {
@@ -247,42 +277,47 @@ class MainWebViewController extends GetxController {
   }
   /// TODO : Ajax 로직 여기로 이동 필요
   ajaxRequestInterceptProc(AjaxRequest ajaxRequest){
-      String data = ajaxRequest.data;
-      switch (ajaxRequest.url) {
-        case INIT_LOGIN_URL:
-          if (!data.contains("procType")) ajaxRequest.data = data + "&devToken=${wvcApiInstance.deviceToken}";
-             addAjaxCompleter(ajaxRequest);
-          break;
-        case TOKEN_LOGIN_URL:
-        case LOGOUT_URL:
-           addAjaxCompleter(ajaxRequest);
-          break;
-        default:
-          break;
-      }
+    String data = ajaxRequest.data;
+    switch (ajaxRequest.url) {
+      case INIT_LOGIN_URL:
+        if (!data.contains("procType")) ajaxRequest.data = data + "&devToken=${wvcApiInstance.deviceToken}";
+        addAjaxCompleter(ajaxRequest);
+        break;
+      case TOKEN_LOGIN_URL:
+        if(!isError) {
+          autoLoginDialog();
+          addAjaxCompleter(ajaxRequest);
+        }
+        break;
+      case LOGOUT_URL:
+        addAjaxCompleter(ajaxRequest);
+        break;
+      default:
+        break;
+    }
   }
 
   ajaxRequestInterceptResponseProc(AjaxRequest ajaxRequest) async {
-      String res = ajaxRequest.responseText;
-      switch (ajaxRequest.url.toString()) {
-        case TOKEN_LOGIN_URL:
-          if (!res.isNullOrBlank) await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).setItem(key: "loginUserForm", value: jsonDecode(res));
-          wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest; //스트림 종료
-          Get.back();
-          break;
-        case INIT_LOGIN_URL:
-          wvcApiInstance.ssItem = await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).getItem(key: "loginUserForm");
-          wvcApiInstance.procType = wvcApiInstance.ssItem["procType"].toString();
-          Get.back();
-          await checkSignin(await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
-          wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
-          break;
-        case LOGOUT_URL:
-          wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
-          break;
-        default:
-          break;
-      }
+    String res = ajaxRequest.responseText;
+    switch (ajaxRequest.url.toString()) {
+      case TOKEN_LOGIN_URL:
+        if (!res.isNullOrBlank) await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).setItem(key: "loginUserForm", value: jsonDecode(res));
+        wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest; //스트림 종료
+        Get.back();
+        break;
+      case INIT_LOGIN_URL:
+        wvcApiInstance.ssItem = await SessionStorage(wvcApiInstance.mainWebViewModel.webViewController).getItem(key: "loginUserForm");
+        wvcApiInstance.procType = wvcApiInstance.ssItem["procType"].toString();
+        Get.back();
+        await checkSignin(await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+        wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
+        break;
+      case LOGOUT_URL:
+        wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
+        break;
+      default:
+        break;
+    }
   }
 
   ///progress 변경시 콜백

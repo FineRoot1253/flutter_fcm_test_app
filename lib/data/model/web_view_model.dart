@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class WebViewModel {
@@ -8,6 +10,7 @@ class WebViewModel {
   int windowId;
   InAppWebViewController webViewController;
   InAppWebViewGroupOptions options;
+  LinkedHashMap<String, dynamic> ssItem;
 
   /// constructor
   WebViewModel({
