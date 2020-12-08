@@ -75,8 +75,8 @@ void showItemSnackBar(
                               wvcApiInstance.compUserId = message["data"]["userId"];
 
                               if(ScreenHodlerController.to.currentIndex==1) ScreenHodlerController.to.onPressHomeBtn();
-                              print("스낵바 로그인 여부 : ${wvcApiInstance.ssItem!=null} : ${wvcApiInstance.ssItem["procType"]!=2}");
-                              if(wvcApiInstance.ssItem!=null&&wvcApiInstance.ssItem["procType"]!=2) {
+                              print("스낵바 로그인 여부 : ${wvcApiInstance.ssItem!=null} : ${wvcApiInstance.procType!="2"}");
+                              if(wvcApiInstance.ssItem!=null&&wvcApiInstance.procType!="2") {
                                 if(wvcApiInstance.ssItem["user"]["userId"]==wvcApiInstance.compUserId) {
                                   await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: (wvcApiInstance.receivedURL.endsWith("/smb00004")) ? FILE_STORAGE_URL : BOARD_URL);
                                   wvcApiInstance.receivedURL = null;

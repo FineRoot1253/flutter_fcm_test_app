@@ -164,6 +164,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
     } else if(_controller.currentIndex==1){
       print("확인 : ${await _controller.wvcApiInstance.subWebViewModel[0].webViewController.getCopyBackForwardList()}");
       if(await _controller.wvcApiInstance.subWebViewModel[0].webViewController.canGoBack()) {
+        print(_controller.wvcApiInstance.subWebViewModel[0].ssItem);
         await SessionStorage(_controller.wvcApiInstance.subWebViewModel[0].webViewController).setItem(key: "loginUserForm",value: _controller.wvcApiInstance.subWebViewModel[0].ssItem);
         await _controller.wvcApiInstance.subWebViewModel[0].webViewController
             .goBack();

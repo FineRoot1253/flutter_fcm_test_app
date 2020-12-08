@@ -16,6 +16,8 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../controller/screen_holder_controller.dart';
+
 class SubWebViewPage extends StatefulWidget {
   final screenHeight;
 
@@ -83,12 +85,12 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
             useShouldOverrideUrlLoading: true,
             useOnLoadResource: true,
           )),
-      onWebViewCreated: (InAppWebViewController controller) {
+      onWebViewCreated: (InAppWebViewController controller) async {
         _controller.wvcApiInstance.subWebViewModel[_controller.shController.currentIndex-1].webViewController =
             controller;
       },
       onLoadResource: (controller, resource) async {
-        if (resource.url.contains("/m_header.js")) {
+        if (resource.url.contains("/m_heaer.js")) {
           await _controller.wvcApiInstance.initLogoutProc(INIT_LOGOUT_BTNS[1]);
         }
       },
@@ -178,16 +180,23 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
       },
       onLoadStop: (InAppWebViewController controller, String url) async {
         ///
-        if (url.endsWith("/dashboard") &&
-            _controller.wvcApiInstance.receivedURL != null) {
-          await _controller.wvcApiInstance.subWebViewModel[_controller.shController.currentIndex-1].webViewController
-              .loadUrl(
-                  url: (_controller.wvcApiInstance.receivedURL
-                          .endsWith("/board"))
-                      ? BOARD_URL
-                      : FILE_STORAGE_URL);
-          _controller.wvcApiInstance.receivedURL = null;
+        if(url.endsWith("/dashboard")){
+          if (_controller.wvcApiInstance.receivedURL != null) {
+            await _controller.wvcApiInstance.subWebViewModel[_controller.shController.currentIndex-1].webViewController
+                .loadUrl(
+                url: (_controller.wvcApiInstance.receivedURL
+                    .endsWith("/board"))
+                    ? BOARD_URL
+                    : FILE_STORAGE_URL);
+            _controller.wvcApiInstance.receivedURL = null;
+          }
+          if(ScreenHodlerController.to.currentIndex==1&&_controller.wvcApiInstance.subWebViewModel[0].ssItem.isNullOrBlank) {
+            _controller.wvcApiInstance.subWebViewModel[0].ssItem =
+            await SessionStorage(controller).getItem(key: "loginUserForm");
+          }
         }
+
+
         print("현재 sub히스토리 로그 : ${ScreenHodlerController.to.currentIndex} : ${await controller.getCopyBackForwardList()}");
       },
       shouldOverrideUrlLoading:
@@ -237,7 +246,6 @@ class _SubWebViewPageState extends State<SubWebViewPage> {
           ScreenHodlerController.to.onPressHomeBtn();
       },
       onCreateWindow: (controller, createWindowRequest) async {
-        _controller.wvcApiInstance.subWebViewModel[0].ssItem=await SessionStorage(controller).getItem(key: "loginUserForm");
         ScreenHodlerController.to.changeWebViewModel(
             WebViewModel(
                 url: "about:blank", windowId: createWindowRequest.windowId),

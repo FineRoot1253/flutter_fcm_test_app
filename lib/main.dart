@@ -71,7 +71,6 @@ groupSummaryNotification(model,
           contentTitle: summaryText, summaryText: '$total개의 안 읽은 알림'),
       color: Colors.blue.shade800,
       importance: Importance.max,
-      channelShowBadge: (flnApiInstance.isSupported),
       largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
 
@@ -137,7 +136,6 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
           summaryText: model.title + " 알림"),
       color: Colors.blue.shade800,
       importance: Importance.max,
-      channelShowBadge: (flnApiInstance.isSupported),
       largeIcon: DrawableResourceAndroidBitmap("app_icon"),
       priority: Priority.max);
   var _iOSPlatformChannelSpecifics = IOSNotificationDetails();

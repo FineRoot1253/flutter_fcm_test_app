@@ -9,6 +9,7 @@ import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:get/get.dart';
 
 
@@ -42,6 +43,7 @@ class NotificationDrawerController extends GetxController{
     boardNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="1").toList();
     fileNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="2").toList();
     await wvcApiInstance.spApiInstance.setList(wvcApiInstance.flnApiInstance.notiListContainer);
+    FlutterAppBadger.updateBadgeCount(wvcApiInstance.flnApiInstance.notiListContainer.length);
   }
 
   addList(Map<String,dynamic> message){

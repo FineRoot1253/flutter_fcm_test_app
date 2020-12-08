@@ -57,7 +57,7 @@ class WVCApi {
 
   /// WebViewModel set
   WebViewModel _mainWebViewModel;
-  List<WebViewModel> _subWebViewModel;
+  List<WebViewModel> _subWebViewModel=List<WebViewModel>();
 
   WebViewModel get mainWebViewModel => _mainWebViewModel;
   List<WebViewModel> get subWebViewModel => _subWebViewModel;
@@ -145,7 +145,7 @@ class WVCApi {
     flnApiInstance.addList(message);
     try {
       print("폰 지원 여부 : ${flnApiInstance.isSupported}");
-      if (flnApiInstance.isSupported) FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
+      // if (flnApiInstance.isSupported) FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
       showItemSnackBar(username: null, message: message);
     }catch(e,s){
       print(e);

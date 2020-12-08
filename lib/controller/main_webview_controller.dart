@@ -10,8 +10,11 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+
+import 'screen_holder_controller.dart';
 
 /// 현재 컨트롤러에는  mvc 모델에 쓰이는 컨트롤러에 비해 다소 많은 기능이 추가되어있음
 /// 웹뷰 url로딩을 직접 컨트롤할 용도로 사용을 하기 위해선
@@ -136,15 +139,13 @@ class MainWebViewController extends GetxController {
     if (!(msg.msgType == "0")) {
       wvcApiInstance.flnApiInstance.backGroundNotiList
           .removeWhere((element) => element.msgType == msg.msgType);
-      print(msg);
-      print(wvcApiInstance.flnApiInstance.notiListContainer.lastIndexWhere((e) => onSelCallBackValidate(e,msg)));
       wvcApiInstance.flnApiInstance.notiListContainer.removeAt(wvcApiInstance.flnApiInstance.notiListContainer.lastIndexWhere((e) => onSelCallBackValidate(e,msg)));
     } else {
       /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
       wvcApiInstance.flnApiInstance.notiListContainer.removeWhere((element) => wvcApiInstance.flnApiInstance.backGroundNotiList.contains(element));
       wvcApiInstance.flnApiInstance.backGroundNotiList.clear();
     }
-
+      FlutterAppBadger.updateBadgeCount(wvcApiInstance.flnApiInstance.notiListContainer.length);
       IsolateNameServer.lookupPortByName(
           "fcm_background_isolate_return").send(wvcApiInstance.flnApiInstance.backGroundNotiList);
     /// 받은 URL,compCd 업데이트

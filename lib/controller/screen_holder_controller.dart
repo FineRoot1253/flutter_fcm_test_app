@@ -42,6 +42,7 @@ class ScreenHodlerController extends GetxController {
     }
     setIndexedStack=0;
     subWebViewPages.clear();
+    wvcApiInstance.subWebViewModel.clear();
   }
 
   void onFileurl() {

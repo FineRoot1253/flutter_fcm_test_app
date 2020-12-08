@@ -116,6 +116,7 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
       /// 수임 업체 리스트를 완전 로드시 리로드 체크
       onLoadResource: (controller, resource) async {
         /// TODO : resource.url 분기 세분화 필요!
+        try{
         _controller.wvcApiInstance.mainWebViewModel.webViewController =
             controller;
 
@@ -144,6 +145,9 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
             await _controller.wvcApiInstance.initLogoutProc(
                 INIT_LOGOUT_BTNS[1]);
           }
+        }}catch(e,s){
+          print(e);
+          print(s);
         }
       },
 
@@ -241,12 +245,16 @@ class _MainWebViewPageState extends State<MainWebViewPage> {
       },
 
       /// 대시보드등등 새탭이 열리는 동작을 담당
-      onCreateWindow: (controller, createWindowRequest) async {
+      onCreateWindow: (controller, createWindowRequest) async {try{
         ScreenHodlerController.to.changeWebViewModel(
             WebViewModel(
                 url: "about:blank", windowId: createWindowRequest.windowId),
             1);
-        return true;
+        }catch(e,s){
+        print(e);
+        print(s);
+      }
+      return true;
       },
       onLoadHttpError: (controller, url, code, message) {
         print("에러발생!");
