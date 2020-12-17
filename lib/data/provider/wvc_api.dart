@@ -93,8 +93,12 @@ class WVCApi {
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
     fcmApiInstance.backGroundMessagePort.listen((message) {
-      if (message["TOTAL"] != null)
-        this.flnApiInstance.notiListContainer = message["TOTAL"];
+      if (message["TOTAL"] != null) {
+        if (message["TOTAL"] is MessageModel)
+          this.flnApiInstance.notiListContainer.add(message["TOTAL"]);
+        else
+          this.flnApiInstance.notiListContainer+=message["TOTAL"];
+      }
       if (message["BACKGROUND"] != null)
         this.flnApiInstance.backGroundNotiList = message["BACKGROUND"];
       print(
@@ -141,13 +145,9 @@ class WVCApi {
   /// 현재 background용 콜백은 main.dart에 정의됨
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
-    print("\n\n\nonMessage : $message\n\n\n");
-    flnApiInstance.addList(message);
-    try {
-      print("폰 지원 여부 : ${flnApiInstance.isSupported}");
-      // if (flnApiInstance.isSupported) FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
-      showItemSnackBar(username: null, message: message);
-    }catch(e,s){
+    try{print("\n\n\nonMessage : $message\n\n\n");
+    if(ScreenHodlerController.to.state!=AppLifecycleState.inactive)flnApiInstance.addList(message);
+    showItemSnackBar(username: null, message: message);}catch(e,s){
       print(e);
       print(s);
     }
@@ -188,4 +188,11 @@ class WVCApi {
 
     await ajaxApiInstance.ajaxCompleter.future;
   }
+
+  sendToIsolate([bool isInit = false]){
+
+      IsolateNameServer.lookupPortByName(
+        "fcm_background_isolate_return")?.send((isInit) ? fcmApiInstance.backGroundMessagePort.sendPort : {"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
+  }
+
 }

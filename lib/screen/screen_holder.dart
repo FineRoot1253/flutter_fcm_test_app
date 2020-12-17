@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
 import 'package:fcm_tet_01_1008/controller/notification_drawer_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
@@ -10,6 +9,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
+
 
 class ScreenHolder extends StatefulWidget {
   @override
@@ -29,7 +30,10 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   void initState() {
     // TODO: implement initState
     WidgetsBinding.instance.addObserver(this);
-
+    try{_controller.wvcApiInstance.sendToIsolate(true);}catch(e,s){
+      print(e);
+      print(s);
+    }
     super.initState();
   }
   @override
@@ -41,8 +45,18 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   @override
   void didChangeAppLifecycleState(AppLifecycleState state)async {
     print("현재 AppLifecycleState : $state");
-    if(state == AppLifecycleState.inactive)
+
+    if(state == AppLifecycleState.inactive){
+      print("백그라운드 이동전 저장시 길이 : ${await _controller.wvcApiInstance.spApiInstance.getList.length}");
       await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
+      _controller.state=state;
+    }
+    if(state == AppLifecycleState.detached){
+      await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
+      print("종료전 메시지 send 가능성 test");
+      FlutterAppBadger.updateBadgeCount(_controller.wvcApiInstance.flnApiInstance.notiListContainer.length);
+    }
+
 
 
     super.didChangeAppLifecycleState(state);
@@ -102,7 +116,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
                                     margin: EdgeInsets.all(2.0),
                                     child: Text(
                                       "${_controller.wvcApiInstance.flnApiInstance.notiListContainer.length}",
-                                      style: TextStyle(fontSize: 8),
+                                      style: TextStyle(fontSize: 8,color: Colors.white),
                                     ),
                                   ),
                                 ))
@@ -148,7 +162,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
       onWillPop: _willPopCallBack,
     );
   }
-
+//TODO : 여기
   Future<bool> _willPopCallBack() async {
     print("현재 뷰 인덱스 : ${_controller.currentIndex}");
     if(_controller.currentIndex==0) {

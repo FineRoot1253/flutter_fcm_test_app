@@ -43,6 +43,8 @@ class NotificationDrawerController extends GetxController{
     boardNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="1").toList();
     fileNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="2").toList();
     await wvcApiInstance.spApiInstance.setList(wvcApiInstance.flnApiInstance.notiListContainer);
+    print("온 업데이트 이후 길이 : ${wvcApiInstance.spApiInstance.getList.length}");
+    wvcApiInstance.sendToIsolate();
     FlutterAppBadger.updateBadgeCount(wvcApiInstance.flnApiInstance.notiListContainer.length);
   }
 
@@ -51,7 +53,7 @@ class NotificationDrawerController extends GetxController{
   }
 
   removeNotification(int index){
-    wvcApiInstance.flnApiInstance.removeNotification(index);
+    wvcApiInstance.flnApiInstance.removeAtNotification(index);
   }
 
   removeLastNotification(){

@@ -133,34 +133,32 @@ class MainWebViewController extends GetxController {
   /// payload 체크용
   Future onSelectNotification(String payload) async {
 
+
     try{
       MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
+      if(wvcApiInstance.flnApiInstance.notiListContainer.isNotEmpty) {
+        wvcApiInstance.flnApiInstance.listRemoveProc(msg);
+        wvcApiInstance.flnApiInstance.msgStrCnt.add("remove");
+        print("온 셀렉트 : ${wvcApiInstance.flnApiInstance.notiListContainer.length}");
+        FlutterAppBadger.updateBadgeCount(
+            wvcApiInstance.flnApiInstance.notiListContainer.length);
+        wvcApiInstance.sendToIsolate();
 
-    if (!(msg.msgType == "0")) {
-      wvcApiInstance.flnApiInstance.backGroundNotiList
-          .removeWhere((element) => element.msgType == msg.msgType);
-      wvcApiInstance.flnApiInstance.notiListContainer.removeAt(wvcApiInstance.flnApiInstance.notiListContainer.lastIndexWhere((e) => onSelCallBackValidate(e,msg)));
-    } else {
-      /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
-      wvcApiInstance.flnApiInstance.notiListContainer.removeWhere((element) => wvcApiInstance.flnApiInstance.backGroundNotiList.contains(element));
-      wvcApiInstance.flnApiInstance.backGroundNotiList.clear();
-    }
-      FlutterAppBadger.updateBadgeCount(wvcApiInstance.flnApiInstance.notiListContainer.length);
-      IsolateNameServer.lookupPortByName(
-          "fcm_background_isolate_return").send(wvcApiInstance.flnApiInstance.backGroundNotiList);
-    /// 받은 URL,compCd 업데이트
-    wvcApiInstance.receivedURL = msg.url;
-    wvcApiInstance.compCd = msg.compCd;
-    wvcApiInstance.compUserId = msg.userId;
-    /// loginCheck 먼저하고 재로그인
-    await _checkSignin(
-        await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+        /// 받은 URL,compCd 업데이트
+        wvcApiInstance.receivedURL = msg.url;
+        wvcApiInstance.compCd = msg.compCd;
+        wvcApiInstance.compUserId = msg.userId;
 
-    /// 리로드 체크
-    if (ScreenHodlerController.to.currentIndex == 1) {
-      ScreenHodlerController.to.onPressHomeBtn();
-    }
-    if (isSignin) await checkAndReLoadUrl();
+        /// loginCheck 먼저하고 재로그인
+        await _checkSignin(
+            await wvcApiInstance.mainWebViewModel.webViewController.getUrl());
+
+        /// 리로드 체크
+        if (ScreenHodlerController.to.currentIndex == 1) {
+          ScreenHodlerController.to.onPressHomeBtn();
+        }
+        if (isSignin) await checkAndReLoadUrl();
+      }
     }catch(e,s){
       print(e);
       print(s);

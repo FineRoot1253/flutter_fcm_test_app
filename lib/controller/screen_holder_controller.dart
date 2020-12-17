@@ -16,6 +16,7 @@ class ScreenHodlerController extends GetxController {
   double screenHeight;
   bool isSignin = false;
   int currentIndex = 0;
+  AppLifecycleState state;
 
 
   set toggle(bool isSigin) {

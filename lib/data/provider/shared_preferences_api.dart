@@ -18,11 +18,14 @@ class SPApi{
   SharedPreferences _prefs;
 
   init() async {
-    _prefs = await SharedPreferences.getInstance();
-    isInited = true;
+    if(!isInited) {
+      _prefs = await SharedPreferences.getInstance();
+      isInited = true;
+    }
   }
 
   Future setList(List<MessageModel> list) async {
+    print("리스트 저장 : ${list.length}");
     await _prefs.setString("notiList", jsonEncode(list.map((e) => e.toMap()).toList()));
   }
 

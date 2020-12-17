@@ -105,7 +105,6 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   
   /// 리슨은 한번만 해도 되니 bool로 체크 하게끔 isListening 추가
     if (!fcmApiInstance.isListening) {
-      flnApiInstance.isSupported= await FlutterAppBadger.isAppBadgeSupported();
     IsolateNameServer.registerPortWithName(
         recPort.sendPort, "fcm_background_isolate_return");
     // await flnApiInstance.initFLN();
@@ -113,8 +112,16 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
 
     recPort.listen((message) async {
       print("FCM ISOLATE : $message");
-      flnApiInstance.backGroundNotiList = message;
 
+      if (message["TOTAL"] != null){
+        flnApiInstance.notiListContainer = message["TOTAL"];
+        await spApiInstance.setList(flnApiInstance.notiListContainer);
+      }
+      if (message["BACKGROUND"] != null)
+        flnApiInstance.backGroundNotiList = message["BACKGROUND"];
+      if(message is SendPort)
+        message.send({"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
+     FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
       return Future<void>.value();
     });
   }
@@ -122,12 +129,18 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
 
 
     List<MessageModel> list = spApiInstance.getList;
-  if(list!=null) flnApiInstance.notiListContainer=list;
+    print("저장된 리스트의 길이 : ${list.length}");
+  if(list!=null){
+    flnApiInstance.notiListContainer=list;
+    print(list);
+  }
+
+
+  print(message);
 
   flnApiInstance.addList(message);
   await spApiInstance.setList(flnApiInstance.notiListContainer);
   model=flnApiInstance.notiListContainer.last;
-  print(!(flnApiInstance.isSupported));
   var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'fcm_default_channel', '비즈북스', '알람설정',
       groupKey: "GROUP_KEY",
@@ -172,7 +185,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   final SendPort port =
   IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
-  port.send({"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
+  port.send({"TOTAL":model,"BACKGROUND":flnApiInstance.backGroundNotiList});
 
   return Future<void>.value();
   }catch(e,s){

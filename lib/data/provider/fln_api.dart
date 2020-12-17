@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +77,8 @@ class FLNApi {
   }
 
   addList(Map<String,dynamic> message){
+    print("하나 추가");
+
     try{
       notiListContainer.add(MessageModel(msgType: message["data"]["msgType"],
           title: message["data"]["title"],
@@ -97,7 +100,7 @@ class FLNApi {
     msgStrCnt.add("add");
   }
 
-  removeNotification(int index){
+  removeAtNotification(int index){
     notiListContainer.removeAt(index);
     msgStrCnt.add("remove");
   }
@@ -106,5 +109,17 @@ class FLNApi {
     notiListContainer.clear();
     msgStrCnt.add("clear");
   }
-
+  listRemoveProc(MessageModel msg){
+    if (!(msg.msgType == "0")) {
+      notiListContainer.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
+      backGroundNotiList.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
+    } else {
+      /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
+      notiListContainer.removeWhere((
+          element) =>
+          backGroundNotiList.contains(
+              element));
+      backGroundNotiList.clear();
+    }
+  }
 }
