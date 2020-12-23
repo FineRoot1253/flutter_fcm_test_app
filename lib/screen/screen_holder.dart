@@ -9,7 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+// import 'package:flutter_app_badger/flutter_app_badger.dart';
 
 
 class ScreenHolder extends StatefulWidget {
@@ -54,7 +54,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
     if(state == AppLifecycleState.detached){
       await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
       print("종료전 메시지 send 가능성 test");
-      FlutterAppBadger.updateBadgeCount(_controller.wvcApiInstance.flnApiInstance.notiListContainer.length);
+      // FlutterAppBadger.updateBadgeCount(_controller.wvcApiInstance.flnApiInstance.notiListContainer.length);
     }
 
 

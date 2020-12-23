@@ -3,7 +3,7 @@ import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 
@@ -53,7 +53,7 @@ class FLNApi {
   ///여기에서 local_notification을 초기화한다.
   ///이 메서드는 webviewinit 메서드쪽에서 호출해서 사용될 용도이다.
   initFLN() async {
-    isSupported = await FlutterAppBadger.isAppBadgeSupported();
+    // isSupported = await FlutterAppBadger.isAppBadgeSupported();
 
     /// TODO : platform분기 필요
     _initializationSettingsAndroid =
@@ -63,7 +63,7 @@ class FLNApi {
         'fcm_default_channel', '비즈북스', '알람설정',
         color: Colors.blue.shade800,
         importance: Importance.max,
-        channelShowBadge: !isSupported,
+        channelShowBadge: true,
         largeIcon: DrawableResourceAndroidBitmap("app_icon"),
         priority: Priority.max);
     _initializationSettings = InitializationSettings(

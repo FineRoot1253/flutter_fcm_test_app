@@ -10,7 +10,6 @@ import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -67,6 +66,7 @@ groupSummaryNotification(model,
       'fcm_default_channel', '비즈북스', '알람설정',
       setAsGroupSummary: true,
       groupKey: "GROUP_KEY",
+      channelAction: AndroidNotificationChannelAction.update,
       styleInformation: InboxStyleInformation(List<String>.from(lines.map((e) => e.msgType).toList()),
           contentTitle: summaryText, summaryText: '$total개의 안 읽은 알림'),
       color: Colors.blue.shade800,
@@ -81,6 +81,7 @@ groupSummaryNotification(model,
       NotificationDetails(
           android: _androidPlatformChannelSpecifics,
           iOS: IOSNotificationDetails()),
+      badgeCount: getMsgLength(flnApiInstance.notiListContainer,model.msgType),
       payload:  jsonEncode(model.toMap()));
   print("printDone");
 
@@ -121,7 +122,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
         flnApiInstance.backGroundNotiList = message["BACKGROUND"];
       if(message is SendPort)
         message.send({"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
-     FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
+     // FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
       return Future<void>.value();
     });
   }
@@ -137,7 +138,8 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
 
 
   print(message);
-
+  MessageModel lastOne;
+  if(flnApiInstance.notiListContainer.length>0) lastOne = flnApiInstance.notiListContainer.last;
   flnApiInstance.addList(message);
   await spApiInstance.setList(flnApiInstance.notiListContainer);
   model=flnApiInstance.notiListContainer.last;
@@ -169,8 +171,10 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
 
     await flnApiInstance.flnPlugin.show(msgId, model.title,
       model.body, _platformChannelSpecifics,
+      badgeCount: getMsgLength(flnApiInstance.notiListContainer,model.msgType),
       payload: jsonEncode(model.toMap()));
     /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
+  if(lastOne != null && lastOne.msgType!=model.msgType)
     await groupSummaryNotification(model,
         summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
         groupTitle: MESSAGE_TYPE_LIST[msgId],
@@ -179,7 +183,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
         lines: flnApiInstance.backGroundNotiList);
 
   fcmApiInstance.isListening = true;
-  FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
+  // FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
   /// 이 메서드는 isolate domain -> 이 메서드 속 resource가 공유안됨
   /// 여기서는 앞서 등록한 sendport를 가져와 메시지를 send
   final SendPort port =
@@ -193,3 +197,5 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
     print(s);
   }
 }
+
+int getMsgLength(List<MessageModel> list, String msgType) => list.where((e)=>e.msgType == msgType).toList().length;

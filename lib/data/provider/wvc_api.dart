@@ -13,7 +13,6 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 

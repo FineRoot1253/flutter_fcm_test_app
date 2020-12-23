@@ -10,7 +10,7 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
@@ -140,8 +140,8 @@ class MainWebViewController extends GetxController {
         wvcApiInstance.flnApiInstance.listRemoveProc(msg);
         wvcApiInstance.flnApiInstance.msgStrCnt.add("remove");
         print("온 셀렉트 : ${wvcApiInstance.flnApiInstance.notiListContainer.length}");
-        FlutterAppBadger.updateBadgeCount(
-            wvcApiInstance.flnApiInstance.notiListContainer.length);
+        // FlutterAppBadger.updateBadgeCount(
+        //     wvcApiInstance.flnApiInstance.notiListContainer.length);
         wvcApiInstance.sendToIsolate();
 
         /// 받은 URL,compCd 업데이트

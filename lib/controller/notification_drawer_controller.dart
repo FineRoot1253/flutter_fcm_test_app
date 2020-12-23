@@ -9,7 +9,7 @@ import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app_badger/flutter_app_badger.dart';
+// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:get/get.dart';
 
 
@@ -45,7 +45,6 @@ class NotificationDrawerController extends GetxController{
     await wvcApiInstance.spApiInstance.setList(wvcApiInstance.flnApiInstance.notiListContainer);
     print("온 업데이트 이후 길이 : ${wvcApiInstance.spApiInstance.getList.length}");
     wvcApiInstance.sendToIsolate();
-    FlutterAppBadger.updateBadgeCount(wvcApiInstance.flnApiInstance.notiListContainer.length);
   }
 
   addList(Map<String,dynamic> message){
