@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
@@ -10,7 +9,6 @@ import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 

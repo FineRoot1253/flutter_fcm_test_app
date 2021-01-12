@@ -12,12 +12,11 @@ import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-
-
-class MyApp extends StatelessWidget{
+class MyApp extends StatelessWidget {
   // This widget is the root of your application.
 
   @override
@@ -84,7 +83,6 @@ groupSummaryNotification(model,
       badgeCount: getMsgLength(flnApiInstance.notiListContainer,model.msgType),
       payload:  jsonEncode(model.toMap()));
   print("printDone");
-
 }
 
 /// TOP_Level BackgroundMessageHandler
@@ -127,75 +125,79 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
     });
   }
 
-
-
     List<MessageModel> list = spApiInstance.getList;
     print("저장된 리스트의 길이 : ${list.length}");
-  if(list!=null){
-    flnApiInstance.notiListContainer=list;
-    print(list);
-  }
+    if (list != null) {
+      flnApiInstance.notiListContainer = list;
+      print(list);
+    }
 
+    print(message);
+    MessageModel lastOne;
+    if (flnApiInstance.notiListContainer.length > 0)
+      lastOne = flnApiInstance.notiListContainer.last;
+    flnApiInstance.addList(message);
+    await spApiInstance.setList(flnApiInstance.notiListContainer);
+    model = flnApiInstance.notiListContainer.last;
+    var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'fcm_default_channel', '비즈북스', '알람설정',
+        groupKey: "GROUP_KEY",
+        styleInformation: BigTextStyleInformation(model.body,
+            contentTitle: model.title, summaryText: model.title + " 알림"),
+        color: Colors.blue.shade800,
+        importance: Importance.max,
+        largeIcon: DrawableResourceAndroidBitmap("app_icon"),
+        priority: Priority.max);
+    var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
 
-  print(message);
-  MessageModel lastOne;
-  if(flnApiInstance.notiListContainer.length>0) lastOne = flnApiInstance.notiListContainer.last;
-  flnApiInstance.addList(message);
-  await spApiInstance.setList(flnApiInstance.notiListContainer);
-  model=flnApiInstance.notiListContainer.last;
-  var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'fcm_default_channel', '비즈북스', '알람설정',
-      groupKey: "GROUP_KEY",
-      styleInformation: BigTextStyleInformation(model.body,
-          contentTitle: model.title,
-          summaryText: model.title + " 알림"),
-      color: Colors.blue.shade800,
-      importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
-      priority: Priority.max);
-  var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var _platformChannelSpecifics = NotificationDetails(
+        android: _androidPlatformChannelSpecifics,
+        iOS: _iOSPlatformChannelSpecifics);
 
-  var _platformChannelSpecifics = NotificationDetails(
-      android: _androidPlatformChannelSpecifics,
-      iOS: _iOSPlatformChannelSpecifics);
+    /// notification ID
+    int msgId = int.tryParse(model.msgType) ?? 0;
 
-  /// notification ID
-  int msgId = int.tryParse(model.msgType) ?? 0;
+    /// 게시판, 서류함 기타등등 메시지 종류별로 하나씩만 리스트에 넣기 위해 if문으로 중복을 체크
+    if (!flnApiInstance.backGroundNotiList
+        .map((e) => e.msgType)
+        .toList()
+        .contains(model.msgType)) {
+      flnApiInstance.backGroundNotiList.add(model);
+    }
 
-  /// 게시판, 서류함 기타등등 메시지 종류별로 하나씩만 리스트에 넣기 위해 if문으로 중복을 체크
-  if (!flnApiInstance.backGroundNotiList.map((e) => e.msgType).toList().contains(model.msgType)) {
-    flnApiInstance.backGroundNotiList.add(model);
-  }
+    /// 앞서 선언, 초기화 한 토대로 notification을 띄움
 
-  /// 앞서 선언, 초기화 한 토대로 notification을 띄움
+    await flnApiInstance.flnPlugin.show(
+        msgId, model.title, model.body, _platformChannelSpecifics,
+        badgeCount:
+            getMsgLength(flnApiInstance.notiListContainer, model.msgType),
+        payload: jsonEncode(model.toMap()));
 
-    await flnApiInstance.flnPlugin.show(msgId, model.title,
-      model.body, _platformChannelSpecifics,
-      badgeCount: getMsgLength(flnApiInstance.notiListContainer,model.msgType),
-      payload: jsonEncode(model.toMap()));
     /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
-  if(lastOne != null && lastOne.msgType!=model.msgType)
-    await groupSummaryNotification(model,
-        summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
-        groupTitle: MESSAGE_TYPE_LIST[msgId],
-        groupContent: "${MESSAGE_TYPE_LIST[msgId]} 관련 알림이 도착해있습니다",
-        total: flnApiInstance.notiListContainer.length,
-        lines: flnApiInstance.backGroundNotiList);
+    if (lastOne != null && lastOne.msgType != model.msgType)
+      await groupSummaryNotification(model,
+          summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
+          groupTitle: MESSAGE_TYPE_LIST[msgId],
+          groupContent: "${MESSAGE_TYPE_LIST[msgId]} 관련 알림이 도착해있습니다",
+          total: flnApiInstance.notiListContainer.length,
+          lines: flnApiInstance.backGroundNotiList);
 
-  fcmApiInstance.isListening = true;
-  // FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
-  /// 이 메서드는 isolate domain -> 이 메서드 속 resource가 공유안됨
-  /// 여기서는 앞서 등록한 sendport를 가져와 메시지를 send
-  final SendPort port =
-  IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
+    fcmApiInstance.isListening = true;
+    // FlutterAppBadger.updateBadgeCount(flnApiInstance.notiListContainer.length);
+    /// 이 메서드는 isolate domain -> 이 메서드 속 resource가 공유안됨
+    /// 여기서는 앞서 등록한 sendport를 가져와 메시지를 send
+    final SendPort port =
+        IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
-  port.send({"TOTAL":model,"BACKGROUND":flnApiInstance.backGroundNotiList});
+    port.send(
+        {"TOTAL": model, "BACKGROUND": flnApiInstance.backGroundNotiList});
 
-  return Future<void>.value();
-  }catch(e,s){
+    return Future<void>.value();
+  } catch (e, s) {
     print(e);
     print(s);
   }
 }
 
-int getMsgLength(List<MessageModel> list, String msgType) => list.where((e)=>e.msgType == msgType).toList().length;
+int getMsgLength(List<MessageModel> list, String msgType) =>
+    list.where((e) => e.msgType == msgType).toList().length;
