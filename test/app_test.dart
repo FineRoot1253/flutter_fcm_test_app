@@ -6,11 +6,10 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'dart:io';
-import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mockito/mockito.dart';
@@ -18,9 +17,9 @@ import 'package:fcm_tet_01_1008/data/provider/http_api.dart';
 import 'package:http/http.dart' as http;
 
 void main() async {
-  MainWebViewController controller;
+  WebViewController controller;
   MockMethodChannel methodChannel;
-  controller = Get.put<MainWebViewController>(MainWebViewController(repository: HttpRepository(httpApi: HttpApi(httpClient: http.Client()))));
+  controller = Get.put<WebViewController>(WebViewController());
   methodChannel = MockMethodChannel();
 
   // final Map<String, String> envVars = Platform.environment;
@@ -44,9 +43,9 @@ void main() async {
   String pw = '1';
 
   testWidgets('Test 1) init login test', (WidgetTester tester) async {
-    await tester.pumpWidget(Phoenix(child: MyApp()));
+    await tester.pumpWidget(MyApp());
     await Future.delayed(Duration(seconds: 5));
-    await controller.wvcApiInstance.mainWebViewModel.webViewController
+    await controller.wvcApiInstance.webViewPages.first.viewModel.webViewController
         .evaluateJavascript(
       source: """
        document.getElementById("userId").value="$id";
@@ -56,7 +55,7 @@ void main() async {
     );
     await controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter.future;
     String url = await controller
-        .wvcApiInstance.mainWebViewModel.webViewController
+        .wvcApiInstance.webViewPages.first.viewModel.webViewController
         .getUrl();
     expect(url,
         'https://bizbooks.newzensolution.co.kr/bizbooks_test/m/taxagent/custlist');

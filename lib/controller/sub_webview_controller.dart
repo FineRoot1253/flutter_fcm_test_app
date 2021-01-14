@@ -6,7 +6,7 @@ class SubWebViewController extends GetxController{
 
   static SubWebViewController get to => Get.find();
 
-  ScreenHodlerController shController = ScreenHodlerController.to;
+  ScreenHolderController shController = ScreenHolderController.to;
 
   final wvcApiInstance = WVCApi();
 

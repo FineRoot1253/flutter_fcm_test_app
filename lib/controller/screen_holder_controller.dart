@@ -1,17 +1,17 @@
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
-import 'package:fcm_tet_01_1008/screen/sub_web_view_page.dart';
+import 'package:fcm_tet_01_1008/screen/webview_page.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class ScreenHodlerController extends GetxController {
+class ScreenHolderController extends GetxController {
 
-  static ScreenHodlerController get to => Get.find();
+  static ScreenHolderController get to => Get.find();
 
   final wvcApiInstance = WVCApi();
 
-  List<SubWebViewPage> subWebViewPages = List<SubWebViewPage>();
   GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
   double screenHeight;
   bool isSignin = false;
@@ -30,24 +30,30 @@ class ScreenHodlerController extends GetxController {
 
 
 
-  void changeWebViewModel(WebViewModel model, int index){
-    wvcApiInstance.addSubWebViewModel(model);
-    subWebViewPages.add(SubWebViewPage(screenHeight: screenHeight));
-    setIndexedStack=index;
+  void changeWebViewModel(WebViewModel model){
+    wvcApiInstance.addWebViewPage(WebViewPage(screenHeight: screenHeight, viewModel: model));
+    setIndexedStack=currentIndex+1;
   }
 
   void onPressHomeBtn() async {
-    if(wvcApiInstance.procType!="2") {
-      await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+MAIN_URL_LIST[1]);
-      return ;
+    if (wvcApiInstance.procType != "2") {
+      await WebViewController.to.webViewGroupOptionSetter(true);
+      await wvcApiInstance.webViewPages[0].viewModel.webViewController.setOptions(options: WebViewController.to.webViewGroupOptions);
+      await wvcApiInstance.webViewPages[0].viewModel.webViewController.loadUrl(
+          url: MAIN_URL + MAIN_URL_LIST[1]);
+      // await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+MAIN_URL_LIST[1]);
+      return;
     }
-    setIndexedStack=0;
-    subWebViewPages.clear();
-    wvcApiInstance.subWebViewModel.clear();
+
+    setIndexedStack = 0;
+    if (wvcApiInstance.webViewPages.length > 1) {
+      wvcApiInstance.webViewPages.removeRange(1, wvcApiInstance.webViewPages.length - 1);
+      wvcApiInstance.webViewPages.removeRange(1, wvcApiInstance.webViewPages.length-1);
+    }
   }
 
   void onFileurl() {
-    wvcApiInstance.removeLastSubWebViewModel();
+    wvcApiInstance.removeLastWebViewPages();
     setIndexedStack=1;
   }
 }

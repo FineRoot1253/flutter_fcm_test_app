@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:fcm_tet_01_1008/bindings/webview_binding.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
@@ -12,9 +11,10 @@ import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import 'data/provider/api.dart';
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -22,7 +22,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      initialBinding: WebViewBinding(),
       title: 'Flutter Demo',
       home: ScreenHolder(),
       getPages: routes,
@@ -52,6 +51,19 @@ void main() async {
   /// myBackgroundMessageHandler에서 send된 메시지는 여기서 받는다.
 
   runApp(MyApp());
+}
+
+onPressConfirm(String id){
+
+  final wvcIns = WVCApi();
+
+}
+onPressDismiss(String id){
+
+  final wvcIns = WVCApi();
+
+
+
 }
 
 groupSummaryNotification(model,

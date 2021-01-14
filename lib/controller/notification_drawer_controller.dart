@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:fcm_tet_01_1008/controller/main_webview_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
@@ -68,17 +68,17 @@ class NotificationDrawerController extends GetxController{
     wvcApiInstance.compCd=model.compCd;
     wvcApiInstance.compUserId=model.userId;
 
-    if(ScreenHodlerController.to.currentIndex==1) ScreenHodlerController.to.onPressHomeBtn();
+    if(ScreenHolderController.to.currentIndex==1) ScreenHolderController.to.onPressHomeBtn();
     if(wvcApiInstance.ssItem!=null&&wvcApiInstance.ssItem["procType"]!=2) {
       if(wvcApiInstance.ssItem["user"]["userId"]==wvcApiInstance.compUserId) {
         print("여기여기");
-        await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: (wvcApiInstance.receivedURL.endsWith("/smb00004")) ? FILE_STORAGE_URL : BOARD_URL);
+        await wvcApiInstance.webViewPages.first.viewModel.webViewController.loadUrl(url: (wvcApiInstance.receivedURL.endsWith("/smb00004")) ? FILE_STORAGE_URL : BOARD_URL);
         wvcApiInstance.receivedURL = null;
         wvcApiInstance.compCd = null;
         wvcApiInstance.compUserId = null;
       }
     }else {
-      await MainWebViewController.to.checkAndReLoadUrl();
+      await WebViewController.to.checkAndReLoadUrl();
     }
 
   }

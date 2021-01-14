@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:fcm_tet_01_1008/controller/notification_drawer_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
-import 'package:fcm_tet_01_1008/screen/main_web_view_page.dart';
+import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
+import 'package:fcm_tet_01_1008/keyword/url.dart';
+import 'package:fcm_tet_01_1008/screen/webview_page.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/drawer.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,8 +22,8 @@ class ScreenHolder extends StatefulWidget {
 class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserver{
   bool isTimerRunnting = false;
 
-  ScreenHodlerController _controller =
-  Get.put(ScreenHodlerController());
+  ScreenHolderController _controller =
+  Get.put(ScreenHolderController());
   NotificationToggleController drawerToggleController=Get.put(NotificationToggleController());
   NotificationDrawerController ndc = Get.put(NotificationDrawerController());
   SubWebViewController swc = Get.put(SubWebViewController());
@@ -65,10 +67,11 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   Widget build(BuildContext context) {
     return WillPopScope(
       child: SafeArea(
-        child: GetBuilder<ScreenHodlerController>(
+        child: GetBuilder<ScreenHolderController>(
           initState: (_) {
             _controller.screenHeight =
                 MediaQuery.of(context).padding.top;
+            _controller.wvcApiInstance.addWebViewPage(WebViewPage(screenHeight: _controller.screenHeight,viewModel: WebViewModel(url: MAIN_URL)));
           },
           builder: (_) {
             return Scaffold(
@@ -149,11 +152,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
                   backgroundColor: Colors.transparent, elevation: 0.0),
               body: IndexedStack(
                 index: _.currentIndex,
-                children: [
-                  MainWebViewPage(
-                      screenHeight: _controller.screenHeight),
-                  ..._.subWebViewPages
-                ],
+                children: _.wvcApiInstance.webViewPages,
               ),
             );
           },
@@ -166,34 +165,28 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   Future<bool> _willPopCallBack() async {
     print("현재 뷰 인덱스 : ${_controller.currentIndex}");
     if(_controller.currentIndex==0) {
-      if(await _controller.wvcApiInstance.mainWebViewModel.webViewController.canGoBack()){
+      if(await _controller.wvcApiInstance.webViewPages.last.viewModel.webViewController.canGoBack()){
 
-        WebHistory wh =await _controller.wvcApiInstance.mainWebViewModel.webViewController.getCopyBackForwardList();
+        WebHistory wh =await _controller.wvcApiInstance.webViewPages.last.viewModel.webViewController.getCopyBackForwardList();
         if(wh.currentIndex>1) {
-          await _controller.wvcApiInstance.mainWebViewModel.webViewController.goBack();
+          await _controller.wvcApiInstance.webViewPages.last.viewModel.webViewController.goBack();
           return false;
         }
-
       }
     } else if(_controller.currentIndex==1){
-      print("확인 : ${await _controller.wvcApiInstance.subWebViewModel[0].webViewController.getCopyBackForwardList()}");
-      if(await _controller.wvcApiInstance.subWebViewModel[0].webViewController.canGoBack()) {
-        print(_controller.wvcApiInstance.subWebViewModel[0].ssItem);
-        await SessionStorage(_controller.wvcApiInstance.subWebViewModel[0].webViewController).setItem(key: "loginUserForm",value: _controller.wvcApiInstance.subWebViewModel[0].ssItem);
-        await _controller.wvcApiInstance.subWebViewModel[0].webViewController
+      if(await _controller.wvcApiInstance.webViewPages.last.viewModel.webViewController.canGoBack()) {
+        await SessionStorage(_controller.wvcApiInstance.webViewPages.last.viewModel.webViewController).setItem(key: "loginUserForm",value: _controller.wvcApiInstance.webViewPages.last.viewModel.ssItem);
+        await _controller.wvcApiInstance.webViewPages.last.viewModel.webViewController
             .goBack();
         return false;
-      }else{
+      } else {
         _controller.onPressHomeBtn();
         return false;
       }
-    }else if(_controller.currentIndex==2) {
-      print("확인 : ${await _controller.wvcApiInstance.subWebViewModel[1].webViewController.getCopyBackForwardList()}");
-      print("세션 스토리지 검증 : ${await SessionStorage(_controller.wvcApiInstance.subWebViewModel[1].webViewController).getItem(key: "loginUserForm")}");
+    } else if(_controller.currentIndex==2) {
       _controller.onFileurl();
       return false;
-    }
-    else {
+    } else {
       _controller.onPressHomeBtn();
       return false;
     }

@@ -11,6 +11,7 @@ import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
+import 'package:fcm_tet_01_1008/screen/webview_page.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -54,18 +55,13 @@ class WVCApi {
   /// 세션 스토리지의 내용이 들어가는 링크드해쉬맵, 쉬운 접근을 위해 여기에 선언
   LinkedHashMap<String, dynamic> ssItem;
 
-  /// WebViewModel set
-  WebViewModel _mainWebViewModel;
-  List<WebViewModel> _subWebViewModel=List<WebViewModel>();
+  List<WebViewPage> _webViewPages = List<WebViewPage>();
 
-  WebViewModel get mainWebViewModel => _mainWebViewModel;
-  List<WebViewModel> get subWebViewModel => _subWebViewModel;
-  set mainWebViewModel(WebViewModel model) {this._mainWebViewModel = model;}
-  addSubWebViewModel(WebViewModel model) => this._subWebViewModel.add(model);
-  removeLastSubWebViewModel() => this._subWebViewModel.removeLast();
-  removeAtSubWebViewModel(int index) => this._subWebViewModel.removeAt(index);
-  clearSubWebViewModel() => this._subWebViewModel.clear();
-
+  List<WebViewPage>  get webViewPages => this._webViewPages;
+  addWebViewPage(WebViewPage page) => this._webViewPages.add(page);
+  removeLastWebViewPages() => this._webViewPages.removeLast();
+  removeAtWebViewPages(int index) => this._webViewPages.removeAt(index);
+  clearWebViewPages() => this._webViewPages.clear();
 
   /// init series logic START
   flnInit(void func(String payload)) async {
@@ -145,7 +141,7 @@ class WVCApi {
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
     try{print("\n\n\nonMessage : $message\n\n\n");
-    if(ScreenHodlerController.to.state!=AppLifecycleState.inactive)flnApiInstance.addList(message);
+    if(ScreenHolderController.to.state!=AppLifecycleState.inactive)flnApiInstance.addList(message);
     showItemSnackBar(username: null, message: message);}catch(e,s){
       print(e);
       print(s);
@@ -159,13 +155,13 @@ class WVCApi {
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=$deviceToken");
        """;
-    if (ScreenHodlerController.to.currentIndex == 0)
-      await mainWebViewModel.webViewController
+    if (ScreenHolderController.to.currentIndex == 0)
+      await this._webViewPages.first.viewModel.webViewController
           .evaluateJavascript(source: autoLoginProcSource1);
     else {
-      await subWebViewModel[0].webViewController
+      await this._webViewPages.last.viewModel.webViewController
           .evaluateJavascript(source: autoLoginProcSource1);
-      ScreenHodlerController.to.onPressHomeBtn();
+      ScreenHolderController.to.onPressHomeBtn();
     }
 
     await ajaxApiInstance.ajaxCompleter.future;
@@ -179,10 +175,10 @@ class WVCApi {
       });
        """;
 
-    (ScreenHodlerController.to.currentIndex == 0)
-        ? await mainWebViewModel.webViewController
+    (ScreenHolderController.to.currentIndex == 0)
+        ? await this._webViewPages.first.viewModel.webViewController
             .evaluateJavascript(source: autoLoginProcSource2)
-        : await subWebViewModel[0].webViewController
+        : await this._webViewPages.last.viewModel.webViewController
             .evaluateJavascript(source: autoLoginProcSource2);
 
     await ajaxApiInstance.ajaxCompleter.future;
