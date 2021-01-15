@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:fcm_tet_01_1008/controller/notification_drawer_controller.dart';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/sub_webview_controller.dart';
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/webview_page.dart';
@@ -27,6 +28,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   NotificationToggleController drawerToggleController=Get.put(NotificationToggleController());
   NotificationDrawerController ndc = Get.put(NotificationDrawerController());
   SubWebViewController swc = Get.put(SubWebViewController());
+  WebViewController wbc = Get.put(WebViewController());
 
   @override
   void initState() {
@@ -58,9 +60,6 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
       print("종료전 메시지 send 가능성 test");
       // FlutterAppBadger.updateBadgeCount(_controller.wvcApiInstance.flnApiInstance.notiListContainer.length);
     }
-
-
-
     super.didChangeAppLifecycleState(state);
   }
   @override

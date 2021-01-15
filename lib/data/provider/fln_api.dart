@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
+import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -39,7 +42,7 @@ class FLNApi {
   var _initializationSettingsIOS;
 
   /// notification 그룹 관리용 변수
-  List<MessageModel> backGroundNotiList = List<MessageModel>();
+  // List<MessageModel> backGroundNotiList = List<MessageModel>();
   List<MessageModel> notiListContainer = List<MessageModel>();
 
   /// notification Page 관리용 스트림
@@ -50,28 +53,66 @@ class FLNApi {
   StreamSubscription<String> msgSub;
   bool isSupported;
 
+
+
   ///여기에서 local_notification을 초기화한다.
   ///이 메서드는 webviewinit 메서드쪽에서 호출해서 사용될 용도이다.
   initFLN() async {
     // isSupported = await FlutterAppBadger.isAppBadgeSupported();
+     await _requestPermission();
+       /// TODO: 종료 필요
 
     /// TODO : platform분기 필요
     _initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/renew_app_icon');
-    _initializationSettingsIOS = IOSInitializationSettings();
+    _initializationSettingsIOS = IOSInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+      notificationCategories: [
+      const IOSNotificationCategory(
+      'demoCategory',
+      <IOSNotificationAction>[
+        IOSNotificationAction('id_1', '확인'),
+        IOSNotificationAction(
+          'id_2',
+          '닫기',
+          options: <IOSNotificationActionOption>{
+            IOSNotificationActionOption.destructive,
+          },
+        ),
+      ],
+      options: <IOSNotificationCategoryOption>{
+        IOSNotificationCategoryOption.hiddenPreviewShowTitle,
+      },
+    )
+      ]);
     _androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'fcm_default_channel', '비즈북스', '알람설정',
         color: Colors.blue.shade800,
         importance: Importance.max,
         channelShowBadge: true,
         largeIcon: DrawableResourceAndroidBitmap("app_icon"),
-        priority: Priority.max);
-    _initializationSettings = InitializationSettings(
+        priority: Priority.max,
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            'id_1',
+            '확인',
+            icon: DrawableResourceAndroidBitmap('app_icon'),
+          ),
+          AndroidNotificationAction(
+            'id_2',
+            '닫기',
+            icon: DrawableResourceAndroidBitmap('app_icon'),
+          ),
+        ]
+    );
+    this._initializationSettings = InitializationSettings(
       android: _initializationSettingsAndroid,
       iOS: _initializationSettingsIOS,
     );
 
-    _platformChannelSpecifics = NotificationDetails(
+    this._platformChannelSpecifics = NotificationDetails(
         android: _androidPlatformChannelSpecifics,
         iOS: _iOSPlatformChannelSpecifics);
   }
@@ -80,7 +121,7 @@ class FLNApi {
     print("하나 추가");
 
     try{
-      notiListContainer.add(MessageModel(msgType: message["data"]["msgType"],
+      this.notiListContainer.add(MessageModel(msgType: message["data"]["msgType"],
           title: message["data"]["title"],
           body: message["data"]["body"],
           compCd: message["data"]["compCd"],
@@ -89,37 +130,74 @@ class FLNApi {
           compNm: message["data"]["compNm"],
           receivedDate: DateFormat("yyyy-MM-dd hh:mm:ss").format(DateTime.now())
       ));
-      msgStrCnt.add("event!");
+      this.msgStrCnt.add("event!");
     }catch(e,s){
       print(s);
     }
   }
 
   removeLastNotification()  {
-    notiListContainer.removeLast();
-    msgStrCnt.add("add");
+    this.notiListContainer.removeLast();
+    this.msgStrCnt.add("add");
   }
 
   removeAtNotification(int index){
-    notiListContainer.removeAt(index);
-    msgStrCnt.add("remove");
+    this.notiListContainer.removeAt(index);
+    this.msgStrCnt.add("remove");
   }
 
   clearNotifications(){
-    notiListContainer.clear();
-    msgStrCnt.add("clear");
+    this.notiListContainer.clear();
+    this.msgStrCnt.add("clear");
   }
+
+  Future<bool> _requestPermission() async {
+    return this._flnPlugin
+        .resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
+
+  showLoginNotification(){
+    this._flnPlugin
+        .show(3, "환영합니다", "비즈북스에 로그인하셨습니다.", this._platformChannelSpecifics);
+    this._flnPlugin
+        .cancel(3);
+  }
+
+  showNotification(){
+
+    this._flnPlugin
+        .show(int.tryParse(notiListContainer.last.msgType) ?? -1, notiListContainer.last.title, notiListContainer.last.body, this._platformChannelSpecifics,payload: jsonEncode(notiListContainer.last.toMap()));
+  }
+
   listRemoveProc(MessageModel msg){
+    notiListContainer.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
     if (!(msg.msgType == "0")) {
-      notiListContainer.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
-      backGroundNotiList.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
+      // backGroundNotiList.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
     } else {
       /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
-      notiListContainer.removeWhere((
-          element) =>
-          backGroundNotiList.contains(
-              element));
-      backGroundNotiList.clear();
+      // notiListContainer.removeWhere((
+      //     element) =>
+      //     backGroundNotiList.contains(
+      //         element));
+      // backGroundNotiList.clear();
     }
   }
+
+  List<MessageModel> getLines(){
+
+    List<MessageModel> result;
+
+    MESSAGE_TYPE_LIST.forEach((typeListElement) {
+      result.add(notiListContainer.lastWhere((notificationListElement) => notificationListElement.msgType == typeListElement));
+    });
+
+    return result;
+  }
+
 }

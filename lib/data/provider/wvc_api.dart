@@ -5,14 +5,11 @@ import 'dart:isolate';
 import 'dart:ui';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
-import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
-import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/webview_page.dart';
-import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -68,7 +65,8 @@ class WVCApi {
     await flnApiInstance.initFLN();
     await flnApiInstance.flnPlugin.initialize(
         flnApiInstance.initializationSettings,
-        onSelectNotification: func);
+        onSelectNotification: func,
+        backgroundHandler: onPressNotificationAction);
   }
 
   fcmInit() async {
@@ -88,16 +86,12 @@ class WVCApi {
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
     fcmApiInstance.backGroundMessagePort.listen((message) {
-      if (message["TOTAL"] != null) {
-        if (message["TOTAL"] is MessageModel)
-          this.flnApiInstance.notiListContainer.add(message["TOTAL"]);
-        else
-          this.flnApiInstance.notiListContainer+=message["TOTAL"];
-      }
-      if (message["BACKGROUND"] != null)
-        this.flnApiInstance.backGroundNotiList = message["BACKGROUND"];
+      if (message != null && message is MessageModel)
+          this.flnApiInstance.notiListContainer.add(message);
+
       print(
-          "MAIN ISOLATE : ${this.flnApiInstance.backGroundNotiList.length} : ${this.flnApiInstance.notiListContainer.length}");
+          "MAIN ISOLATE : ${this.flnApiInstance.notiListContainer.length}");
+
       flnApiInstance.msgStrCnt.add("event!");
     });
 
@@ -140,9 +134,17 @@ class WVCApi {
   /// 현재 background용 콜백은 main.dart에 정의됨
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
-    try{print("\n\n\nonMessage : $message\n\n\n");
-    if(ScreenHolderController.to.state!=AppLifecycleState.inactive)flnApiInstance.addList(message);
-    showItemSnackBar(username: null, message: message);}catch(e,s){
+    try{
+      print("\n\n\nonMessage : $message\n\n\n");
+    if(ScreenHolderController.to.state!=AppLifecycleState.inactive)
+      flnApiInstance.addList(message);
+
+    flnApiInstance.showNotification();
+
+
+
+    // showItemSnackBar(username: null, message: message);
+    }catch(e,s){
       print(e);
       print(s);
     }
@@ -187,7 +189,7 @@ class WVCApi {
   sendToIsolate([bool isInit = false]){
 
       IsolateNameServer.lookupPortByName(
-        "fcm_background_isolate_return")?.send((isInit) ? fcmApiInstance.backGroundMessagePort.sendPort : {"TOTAL":flnApiInstance.notiListContainer,"BACKGROUND":flnApiInstance.backGroundNotiList});
+        "fcm_background_isolate_return")?.send((isInit) ? fcmApiInstance.backGroundMessagePort.sendPort : flnApiInstance.notiListContainer);
   }
 
 }

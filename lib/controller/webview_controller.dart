@@ -176,7 +176,8 @@ class WebViewController extends GetxController {
     ///&&this.progress==-1 && !ssItem.isNull
     if (!wvcApiInstance.ssItem.isNull && !isSignin) {
       var username = wvcApiInstance.ssItem["user"]["userNm"];
-      showItemSnackBar(message: null, username: username);
+      // showItemSnackBar(message: null, username: username);
+      wvcApiInstance.flnApiInstance.showLoginNotification();
       isSignin = true;
       ScreenHolderController.to.toggle=isSignin;
     }
