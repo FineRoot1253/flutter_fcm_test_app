@@ -53,37 +53,8 @@ class MessageModel {
 
   get receivedDate => _receivedDate;
 
-  set msgType(msgType) {
-    this._msgType = msgType;
-  }
+  int get msgTypeToInt => int.tryParse(this._msgType) ?? -1;
 
-  set title(title) {
-    this._title = title;
-  }
-
-  set body(body) {
-    this._body = body;
-  }
-
-  set url(url) {
-    this._url = url;
-  }
-
-  set userId(userId) {
-    this._userId = userId;
-  }
-
-  set compCd(compCd) {
-    this._compCd = compCd;
-  }
-
-  set compNm(compNm) {
-    this._compNm = compNm;
-  }
-
-  set receivedDate(receivedDate) {
-    this._receivedDate = receivedDate;
-  }
 
   MessageModel.fromJson(Map<String, dynamic> map)
       : _msgType = map["msgType"] ?? "0",
@@ -111,6 +82,7 @@ class MessageModel {
   toString() {
     return toMap().toString();
   }
+
 
   @override
   bool operator ==(Object other) {

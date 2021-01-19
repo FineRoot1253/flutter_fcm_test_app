@@ -2,13 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
-import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
-import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
@@ -21,9 +17,6 @@ import 'screen_holder_controller.dart';
 class WebViewController extends GetxController {
   /// CV의 편한 연결을 위해 추가
   static WebViewController get to => Get.find();
-
-
-  // WebViewController({@required this.repository}) : assert(repository != null);
 
   /// API 연결
   final wvcApiInstance = WVCApi();
@@ -66,19 +59,6 @@ class WebViewController extends GetxController {
       wvcApiInstance.ajaxInit();
       await wvcApiInstance.spInit();
       /// FLN + FCM + init END
-
-      /// 토큰 재발급 리슨, TODO: 추후 사용 필요시 주석제거
-      // refreshing = fcmApiInstance.fcmPlugin.onTokenRefresh.listen((newToken) {
-      //   this.deviceToken=newToken;
-      //   print("디바이스 토큰 교체완료 : ${this.deviceToken}");
-      // });
-
-      /// WebViewModel init START ////////////////////////////////////////////////
-      // wvcApiInstance.mainWebViewModel=WebViewModel(
-      //   url: MAIN_URL,
-      // );
-      /// WebViewModel init END //////////////////////////////////////////////////
-
 
       /// WebViewGroupOptions init START /////////////////////////////////////////
       webViewGroupOptions = InAppWebViewGroupOptions(
@@ -161,15 +141,6 @@ class WebViewController extends GetxController {
     }
 
   }
-
-  onSelCallBackValidate(MessageModel element,MessageModel msg) =>
-      element.title == msg.title &&
-          element.body == msg.body &&
-          element.url == msg.url &&
-          element.msgType == msg.msgType &&
-          element.userId== msg.userId &&
-          element.compCd== msg.compCd &&
-          element.compNm== msg.compNm;
 
   _checkSignin(String currentURL) async {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출

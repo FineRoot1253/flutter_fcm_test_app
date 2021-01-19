@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
@@ -182,7 +181,6 @@ class _WebViewPageState extends State<WebViewPage> {
             _isCheckOut = false;
             return;
           }
-          bool isStartSnkOpen = true;
           var uri = Uri.parse(url);
           String path = uri.path;
           String fileName = path.substring(path.lastIndexOf("/") + 1);

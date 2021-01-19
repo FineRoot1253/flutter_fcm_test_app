@@ -73,7 +73,7 @@ class FLNApi {
       const IOSNotificationCategory(
       'demoCategory',
       <IOSNotificationAction>[
-        IOSNotificationAction('id_1', '확인'),
+        IOSNotificationAction('id_1', '확인', options: <IOSNotificationActionOption>{IOSNotificationActionOption.foreground}),
         IOSNotificationAction(
           'id_2',
           '닫기',
@@ -170,28 +170,17 @@ class FLNApi {
   }
 
   showNotification(){
-
     this._flnPlugin
         .show(int.tryParse(notiListContainer.last.msgType) ?? -1, notiListContainer.last.title, notiListContainer.last.body, this._platformChannelSpecifics,payload: jsonEncode(notiListContainer.last.toMap()));
   }
 
   listRemoveProc(MessageModel msg){
     notiListContainer.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
-    if (!(msg.msgType == "0")) {
-      // backGroundNotiList.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);
-    } else {
-      /// backGroundNotiList clear전, notiListContainer과 중복검사후 제거
-      // notiListContainer.removeWhere((
-      //     element) =>
-      //     backGroundNotiList.contains(
-      //         element));
-      // backGroundNotiList.clear();
-    }
   }
 
   List<MessageModel> getLines(){
 
-    List<MessageModel> result;
+    List<MessageModel> result = List<MessageModel>();
 
     MESSAGE_TYPE_LIST.forEach((typeListElement) {
       result.add(notiListContainer.lastWhere((notificationListElement) => notificationListElement.msgType == typeListElement));

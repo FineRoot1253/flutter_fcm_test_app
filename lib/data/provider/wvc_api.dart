@@ -32,8 +32,7 @@ class WVCApi {
   final ajaxApiInstance = AJAXApi();
   final spApiInstance = SPApi();
 
-  // final SendPort sendPort = IsolateNameServer.lookupPortByName(
-  //     "fcm_background_isolate_return");
+
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
 
@@ -88,11 +87,18 @@ class WVCApi {
     fcmApiInstance.backGroundMessagePort.listen((message) {
       if(message == null) return ;
 
+      print("백에서 받은 메시지 :  ${message.toString()}");
+
       if (message is MessageModel)
           this.flnApiInstance.notiListContainer.add(message);
-      if (message is int)
-        this.flnApiInstance.notiListContainer.removeWhere((
-            element) => element == this.flnApiInstance.notiListContainer.lastWhere((e) => e.msgType.toString() == "$message"));
+      if (message is int){
+        (message == 0) ?
+        this.flnApiInstance.notiListContainer.removeLast() :
+        this.flnApiInstance.notiListContainer.removeWhere((element) =>
+        element == this.flnApiInstance.notiListContainer.lastWhere((e) =>
+        e.msgType.toString() == "$message"));
+      }
+
 
 
       print(
@@ -142,14 +148,13 @@ class WVCApi {
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
     try{
       print("\n\n\nonMessage : $message\n\n\n");
-    if(ScreenHolderController.to.state!=AppLifecycleState.inactive)
+     if(ScreenHolderController.to.state!=AppLifecycleState.inactive)
       flnApiInstance.addList(message);
 
     flnApiInstance.showNotification();
 
 
 
-    // showItemSnackBar(username: null, message: message);
     }catch(e,s){
       print(e);
       print(s);

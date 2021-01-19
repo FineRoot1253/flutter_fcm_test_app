@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -14,8 +13,6 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import 'data/provider/api.dart';
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -56,11 +53,9 @@ void main() async {
 
 void onPressNotificationAction(Map<String, dynamic> record) async {
 
-  print("전달받은 act값 : ${record["act_id"]}");
-  print("전달받은 noti값 : ${record["noti_id"]}");
+
 
   SendPort sendPort = IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
-
   sendPort.send(record["noti_id"]);
 
 }
@@ -125,13 +120,11 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
 
   MessageModel lastOne;
   MessageModel model;
-  int msgId;
+  // int msgId;
 
   /// SP init
   await spApiInstance.init();
 
-
-  
   /// 리슨은 한번만 해도 되니 bool로 체크 하게끔 isListening 추가
     if (!fcmApiInstance.isListening) {
 
@@ -195,27 +188,27 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
           ),
         ]
     );
-    var _iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var _iOSPlatformChannelSpecifics = IOSNotificationDetails(categoryIdentifier: "demoIdentifier");
 
     var _platformChannelSpecifics = NotificationDetails(
         android: _androidPlatformChannelSpecifics,
         iOS: _iOSPlatformChannelSpecifics);
 
-    /// notification ID
-    msgId = int.tryParse(model.msgType) ?? 0;
+    // /// notification ID
+    // msgId = int.tryParse(model.msgType) ?? 0;
 
     /// 앞서 선언, 초기화 한 토대로 notification을 띄움
 
     await flnApiInstance.flnPlugin.show(
-        msgId, model.title, model.body, _platformChannelSpecifics,
+        model.msgTypeToInt, model.title, model.body, _platformChannelSpecifics,
         payload: jsonEncode(model.toMap()));
 
     /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
     if (lastOne != null && lastOne.msgType != model.msgType)
       await groupSummaryNotification(model,
-          summaryText: "${MESSAGE_TYPE_LIST[msgId]} 알림이 도착했습니다",
-          groupTitle: MESSAGE_TYPE_LIST[msgId],
-          groupContent: "${MESSAGE_TYPE_LIST[msgId]} 관련 알림이 도착해있습니다",
+          summaryText: "${MESSAGE_TYPE_LIST[model.msgTypeToInt-1]} 알림이 도착했습니다",
+          groupTitle: MESSAGE_TYPE_LIST[model.msgTypeToInt-1],
+          groupContent: "${MESSAGE_TYPE_LIST[model.msgTypeToInt-1]} 관련 알림이 도착해있습니다",
           total: flnApiInstance.notiListContainer.length,
           lines: flnApiInstance.getLines());
 

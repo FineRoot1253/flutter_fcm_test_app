@@ -5,16 +5,12 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'dart:io';
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
-import 'package:fcm_tet_01_1008/data/repository/http_repository.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mockito/mockito.dart';
-import 'package:fcm_tet_01_1008/data/provider/http_api.dart';
-import 'package:http/http.dart' as http;
 
 void main() async {
   WebViewController controller;
