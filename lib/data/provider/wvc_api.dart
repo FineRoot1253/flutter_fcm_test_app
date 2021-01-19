@@ -86,8 +86,14 @@ class WVCApi {
     /// 3_2) this.flnApiInstance.notificationList send
     /// 아래의 listen에서 send된 notificationList를 업데이트 4)
     fcmApiInstance.backGroundMessagePort.listen((message) {
-      if (message != null && message is MessageModel)
+      if(message == null) return ;
+
+      if (message is MessageModel)
           this.flnApiInstance.notiListContainer.add(message);
+      if (message is int)
+        this.flnApiInstance.notiListContainer.removeWhere((
+            element) => element == this.flnApiInstance.notiListContainer.lastWhere((e) => e.msgType.toString() == "$message"));
+
 
       print(
           "MAIN ISOLATE : ${this.flnApiInstance.notiListContainer.length}");

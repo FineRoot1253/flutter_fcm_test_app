@@ -58,36 +58,10 @@ void onPressNotificationAction(Map<String, dynamic> record) async {
 
   print("전달받은 act값 : ${record["act_id"]}");
   print("전달받은 noti값 : ${record["noti_id"]}");
-  // final ReceivePort recPort = ReceivePort();
-  // final SendPort sendPort =
-  // IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
-  final wvcIns = WVCApi();
-  // final spApiInstance = SPApi();
-  // List<ActiveNotification> list = List();
 
-  // if(Platform.isAndroid){
-  //   list = await wvcIns.flnApiInstance.flnPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>().getActiveNotifications();
-    if(record["act_id"] == 'id_2') {
-      print("삭제 시작");
-      wvcIns.flnApiInstance.flnPlugin.cancel(record["noti_id"]);
+  SendPort sendPort = IsolateNameServer.lookupPortByName('fcm_background_msg_isolate');
 
-  }
-  //
-  // MessageModel model;
-  //
-  // await spApiInstance.init();
-  //
-  // IsolateNameServer.registerPortWithName(
-  //     recPort.sendPort, "fln_background_notification_isolate_onMSGReceived");
-  // recPort.listen((value) async {
-  //   model = spApiInstance.getList.last;
-  //   return Future<void>.value();
-  // });
-
-  //
-  //
-  //
-  // sendPort.send(model);
+  sendPort.send(record["noti_id"]);
 
 }
 

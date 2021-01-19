@@ -111,4 +111,23 @@ class MessageModel {
   toString() {
     return toMap().toString();
   }
+
+  @override
+  bool operator ==(Object other) {
+    // TODO: implement ==
+    return (identical(this, other) ||
+            other is MessageModel &&
+            this.runtimeType == other.runtimeType &&
+            other.title == this.title &&
+            other.body == this.body &&
+            other.msgType == this.msgType &&
+            other.compCd == this.compCd &&
+            other.compNm == this.compNm &&
+            other.url == this.url &&
+            other.receivedDate == this.receivedDate);
+  }
+
+  @override
+  // TODO: implement hashCode
+  int get hashCode => super.hashCode;
 }
