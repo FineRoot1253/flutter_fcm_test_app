@@ -129,5 +129,12 @@ class MessageModel {
 
   @override
   // TODO: implement hashCode
-  int get hashCode => super.hashCode;
+  int get hashCode => this._msgType.hashCode
+  ^ this._body.hashCode
+  ^ this._title.hashCode
+  ^ this._compCd.hashCode
+  ^ this._compNm.hashCode
+  ^ this._url.hashCode
+  ^ this._userId.hashCode
+  ^ this._receivedDate.hashCode;
 }
