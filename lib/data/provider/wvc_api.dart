@@ -1,18 +1,14 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
-import 'dart:isolate';
-import 'dart:ui';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
-import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
-import 'package:fcm_tet_01_1008/data/provider/shared_preferences_api.dart';
+import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/webview_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive/hive.dart';
 
 class WVCApi {
   /// singleton logic START
@@ -30,8 +26,7 @@ class WVCApi {
   final fcmApiInstance = FCMApi();
   final flnApiInstance = FLNApi();
   final ajaxApiInstance = AJAXApi();
-  final spApiInstance = SPApi();
-
+  final daoIns = DAOApi();
 
   /// FCM에서 받은 URL 변수, 체크 및 리로드용
   String receivedURL;
@@ -48,15 +43,21 @@ class WVCApi {
   /// 유저의 로그인 타입
   String procType;
 
+  Box _box;
+
   /// 세션 스토리지의 내용이 들어가는 링크드해쉬맵, 쉬운 접근을 위해 여기에 선언
   LinkedHashMap<String, dynamic> ssItem;
 
   List<WebViewPage> _webViewPages = List<WebViewPage>();
 
-  List<WebViewPage>  get webViewPages => this._webViewPages;
+  List<WebViewPage> get webViewPages => this._webViewPages;
+
   addWebViewPage(WebViewPage page) => this._webViewPages.add(page);
+
   removeLastWebViewPages() => this._webViewPages.removeLast();
+
   removeAtWebViewPages(int index) => this._webViewPages.removeAt(index);
+
   clearWebViewPages() => this._webViewPages.clear();
 
   /// init series logic START
@@ -77,47 +78,12 @@ class WVCApi {
     );
     fcmApiInstance.fcmInitialize();
 
-    /// fcmApiInstance.backGroundMessagePort
-    /// fcm서버에서 message받음 1)
-    /// 아래 onData 발동됨 2)
-    /// fcm mybackgroundMessageHanlder는 2가지 동작을 수행 3)
-    /// 3_1) flnApi.flnplugin.show를 수행
-    /// 3_2) this.flnApiInstance.notificationList send
-    /// 아래의 listen에서 send된 notificationList를 업데이트 4)
-    fcmApiInstance.backGroundMessagePort.listen((message) {
-      if(message == null) return ;
-
-      print("백에서 받은 메시지 :  ${message.toString()}");
-
-      if (message is MessageModel)
-          this.flnApiInstance.notiListContainer.add(message);
-      if (message is int){
-        (message == 0) ?
-        this.flnApiInstance.notiListContainer.removeLast() :
-        this.flnApiInstance.notiListContainer.removeWhere((element) =>
-        element == this.flnApiInstance.notiListContainer.lastWhere((e) =>
-        e.msgType.toString() == "$message"));
-      }
-
-
-
-      print(
-          "MAIN ISOLATE : ${this.flnApiInstance.notiListContainer.length}");
-
-      flnApiInstance.msgStrCnt.add("event!");
-    });
-
     ///  로그인시 토큰 체크용
     await fcmApiInstance.fcmPlugin.getToken().then((String token) {
       assert(token != null);
       print("Push Messaging token: $token");
       this.deviceToken = token;
     });
-  }
-
-  spInit() async {
-    await spApiInstance.init();
-    flnApiInstance.notiListContainer = spApiInstance.getList??List<MessageModel>();
   }
 
   // TODO: ajax 시작에 StreamController.add(),  끝부분엔 isloadDone()을 호출 할 것
@@ -146,19 +112,11 @@ class WVCApi {
   /// 현재 background용 콜백은 main.dart에 정의됨
   /// foreground용 콜백
   Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
-    try{
-      print("\n\n\nonMessage : $message\n\n\n");
-     if(ScreenHolderController.to.state!=AppLifecycleState.inactive)
+    print("\n\n\nonMessage : $message\n\n\n");
+    if (ScreenHolderController.to.state != AppLifecycleState.inactive)
       flnApiInstance.addList(message);
 
     flnApiInstance.showNotification();
-
-
-
-    }catch(e,s){
-      print(e);
-      print(s);
-    }
   }
 
   logoutProc() async {
@@ -169,10 +127,18 @@ class WVCApi {
       xhttp.send("devToken=$deviceToken");
        """;
     if (ScreenHolderController.to.currentIndex == 0)
-      await this._webViewPages.first.viewModel.webViewController
+      await this
+          ._webViewPages
+          .first
+          .viewModel
+          .webViewController
           .evaluateJavascript(source: autoLoginProcSource1);
     else {
-      await this._webViewPages.last.viewModel.webViewController
+      await this
+          ._webViewPages
+          .last
+          .viewModel
+          .webViewController
           .evaluateJavascript(source: autoLoginProcSource1);
       ScreenHolderController.to.onPressHomeBtn();
     }
@@ -189,18 +155,19 @@ class WVCApi {
        """;
 
     (ScreenHolderController.to.currentIndex == 0)
-        ? await this._webViewPages.first.viewModel.webViewController
+        ? await this
+            ._webViewPages
+            .first
+            .viewModel
+            .webViewController
             .evaluateJavascript(source: autoLoginProcSource2)
-        : await this._webViewPages.last.viewModel.webViewController
+        : await this
+            ._webViewPages
+            .last
+            .viewModel
+            .webViewController
             .evaluateJavascript(source: autoLoginProcSource2);
 
     await ajaxApiInstance.ajaxCompleter.future;
   }
-
-  sendToIsolate([bool isInit = false]){
-
-      IsolateNameServer.lookupPortByName(
-        "fcm_background_isolate_return")?.send((isInit) ? fcmApiInstance.backGroundMessagePort.sendPort : flnApiInstance.notiListContainer);
-  }
-
 }

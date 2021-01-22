@@ -1,21 +1,10 @@
-import 'dart:isolate';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FCMApi{
-  /// 현 클래스 싱글톤화
-  static FCMApi _instance;
-
-  FCMApi._internal(){
-    _instance = this;
-  }
-  factory FCMApi() => _instance ?? FCMApi._internal();
 
   final FirebaseMessaging _fm = FirebaseMessaging();
 
   /// fcm에 접근시키기위한 변수
-  final ReceivePort backGroundMessagePort = ReceivePort();
-
-  bool isListening = false;
 
   FirebaseMessaging get fcmPlugin => _fm;
 

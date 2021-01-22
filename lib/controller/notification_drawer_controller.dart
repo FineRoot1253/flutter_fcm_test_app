@@ -1,15 +1,8 @@
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:ui';
-
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:get/get.dart';
 
 
@@ -31,20 +24,20 @@ class NotificationDrawerController extends GetxController{
   onInitiate(){
 
     wvcApiInstance.flnApiInstance.msgSub=wvcApiInstance.flnApiInstance.msgStream.listen((event) async {
-      await onUpdate();
+      await onUpdate(event);
       update();
     });
   }
 
-  onUpdate()async{
+  onUpdate([String event])async{
     ///list set
     print(wvcApiInstance.flnApiInstance.notiListContainer);
     mainNotiList = wvcApiInstance.flnApiInstance.notiListContainer;
     boardNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="1").toList();
     fileNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="2").toList();
-    await wvcApiInstance.spApiInstance.setList(wvcApiInstance.flnApiInstance.notiListContainer);
-    print("온 업데이트 이후 길이 : ${wvcApiInstance.spApiInstance.getList.length}");
-    wvcApiInstance.sendToIsolate();
+    if(event!='reset')
+      await wvcApiInstance.daoIns.setList(wvcApiInstance.flnApiInstance.notiListContainer);
+    // wvcApiInstance.sendToIsolate();
   }
 
   addList(Map<String,dynamic> message){

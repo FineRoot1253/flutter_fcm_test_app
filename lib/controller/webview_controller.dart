@@ -57,7 +57,6 @@ class WebViewController extends GetxController {
       await wvcApiInstance.fcmInit();
       await wvcApiInstance.flnInit(onSelectNotification);
       wvcApiInstance.ajaxInit();
-      await wvcApiInstance.spInit();
       /// FLN + FCM + init END
 
       /// WebViewGroupOptions init START /////////////////////////////////////////
@@ -109,7 +108,7 @@ class WebViewController extends GetxController {
   /// payload 체크용
   Future onSelectNotification(String payload) async {
 
-
+    print("셀렉트");
     try{
       MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
       if(wvcApiInstance.flnApiInstance.notiListContainer.isNotEmpty) {
@@ -118,7 +117,6 @@ class WebViewController extends GetxController {
         print("온 셀렉트 : ${wvcApiInstance.flnApiInstance.notiListContainer.length}");
         // FlutterAppBadger.updateBadgeCount(
         //     wvcApiInstance.flnApiInstance.notiListContainer.length);
-        wvcApiInstance.sendToIsolate();
 
         /// 받은 URL,compCd 업데이트
         wvcApiInstance.receivedURL = msg.url;
@@ -146,8 +144,6 @@ class WebViewController extends GetxController {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
     ///&&this.progress==-1 && !ssItem.isNull
     if (!wvcApiInstance.ssItem.isNull && !isSignin) {
-      var username = wvcApiInstance.ssItem["user"]["userNm"];
-      // showItemSnackBar(message: null, username: username);
       wvcApiInstance.flnApiInstance.showLoginNotification();
       isSignin = true;
       ScreenHolderController.to.toggle=isSignin;

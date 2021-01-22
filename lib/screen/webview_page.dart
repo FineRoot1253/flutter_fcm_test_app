@@ -81,7 +81,7 @@ class _WebViewPageState extends State<WebViewPage> {
                 child: FutureBuilder(
                   future: result,
                   builder: (context, snapshot) {
-                    print(snapshot.data);
+
                     if (snapshot.data != null)
                       return buildWebView();
                     else if (snapshot.hasError)

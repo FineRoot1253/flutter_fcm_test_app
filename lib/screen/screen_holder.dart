@@ -26,15 +26,13 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   NotificationToggleController drawerToggleController=Get.put(NotificationToggleController());
   NotificationDrawerController ndc = Get.put(NotificationDrawerController());
   WebViewController wbc = Get.put(WebViewController());
+  Future result;
 
   @override
   void initState() {
     // TODO: implement initState
     WidgetsBinding.instance.addObserver(this);
-    try{_controller.wvcApiInstance.sendToIsolate(true);}catch(e,s){
-      print(e);
-      print(s);
-    }
+    result = _controller.wvcApiInstance.flnApiInstance.initNotificationListContainer();
     super.initState();
   }
   @override
@@ -47,19 +45,35 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
   void didChangeAppLifecycleState(AppLifecycleState state)async {
     print("현재 AppLifecycleState : $state");
 
-    if(state == AppLifecycleState.inactive){
-      print("백그라운드 이동전 저장시 길이 : ${await _controller.wvcApiInstance.spApiInstance.getList.length}");
-      await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
-      _controller.state=state;
+    if(state == AppLifecycleState.resumed){
+      await _controller.wvcApiInstance.flnApiInstance.initNotificationListContainer();
+      _controller.wvcApiInstance.flnApiInstance.msgStrCnt.add("reset");
     }
-    if(state == AppLifecycleState.detached){
-      await _controller.wvcApiInstance.spApiInstance.setList(_controller.wvcApiInstance.flnApiInstance.notiListContainer);
-      print("종료전 메시지 send 가능성 test");
-    }
+
+    /// isolate간 메모리가 다르니 인스턴스도 다르다는 것을 늘 염두 할 것
+    if(state == AppLifecycleState.inactive)
+      await _controller.wvcApiInstance.daoIns.closeBox();
+
+
     super.didChangeAppLifecycleState(state);
   }
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: result,
+        builder: (context, snapshot){
+
+      if(snapshot.hasData)
+        return buildScreenHold();
+
+      if(snapshot.hasError)
+        return Center(child: Text("Error!\n${snapshot.error.toString()}"));
+
+      return Center(child: CircularProgressIndicator());
+    });
+  }
+
+  Widget buildScreenHold(){
     return WillPopScope(
       child: SafeArea(
         child: GetBuilder<ScreenHolderController>(
@@ -76,8 +90,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
               resizeToAvoidBottomPadding: false,
               floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
-              bottomNavigationBar: _.isSignin
-                  ? BottomAppBar(
+              bottomNavigationBar: BottomAppBar(
                   shape: _.isSignin ? CircularNotchedRectangle() : null,
                   clipBehavior: Clip.antiAliasWithSaveLayer,
                   child: Container(
@@ -95,6 +108,8 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
                       icon: GetBuilder<NotificationToggleController>(
                         initState: (_){
                           drawerToggleController.onInitiate();
+                          print("notiListContainer 길이 : ${_controller.wvcApiInstance.flnApiInstance.notiListContainer.length}");
+                          _controller.wvcApiInstance.flnApiInstance.notiListContainer.forEach((element) => print(element.toMap().toString()));
                           drawerToggleController.listCheckedOut = (_controller.wvcApiInstance.flnApiInstance.notiListContainer.length > 0) ?
                           false:
                           true;
@@ -123,8 +138,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
                         } ,
                       ),
                     ),
-                  ))
-                  : BottomAppBar(),
+                  )),
               floatingActionButton: _.isSignin
                   ? Container(
                 height: Get.width * 0.12,
@@ -156,6 +170,7 @@ class _ScreenHolderState extends State<ScreenHolder>  with WidgetsBindingObserve
       onWillPop: _willPopCallBack,
     );
   }
+
 //TODO : 여기
   Future<bool> _willPopCallBack() async {
     print("현재 뷰 인덱스 : ${_controller.currentIndex}");

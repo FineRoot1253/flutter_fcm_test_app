@@ -1,24 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
-import 'dart:ui';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
+import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 
 class FLNApi {
-  /// 현 클래스 싱글톤화
-  static FLNApi _instance;
 
-  FLNApi._internal() {
-    _instance = this;
-  }
-
-  factory FLNApi() => _instance ?? FLNApi._internal();
+  final dbIns = DAOApi();
 
   final FlutterLocalNotificationsPlugin _flnPlugin =
   FlutterLocalNotificationsPlugin();
@@ -43,7 +35,7 @@ class FLNApi {
 
   /// notification 그룹 관리용 변수
   // List<MessageModel> backGroundNotiList = List<MessageModel>();
-  List<MessageModel> notiListContainer = List<MessageModel>();
+  List<MessageModel> _notiListContainer;
 
   /// notification Page 관리용 스트림
   StreamController<String> msgStrCnt = StreamController.broadcast();
@@ -51,9 +43,6 @@ class FLNApi {
   Stream<String> get msgStream => msgStrCnt.stream;
 
   StreamSubscription<String> msgSub;
-  bool isSupported;
-
-
 
   ///여기에서 local_notification을 초기화한다.
   ///이 메서드는 webviewinit 메서드쪽에서 호출해서 사용될 용도이다.
@@ -115,7 +104,30 @@ class FLNApi {
     this._platformChannelSpecifics = NotificationDetails(
         android: _androidPlatformChannelSpecifics,
         iOS: _iOSPlatformChannelSpecifics);
+
+    if(this._notiListContainer == null)
+      await initNotificationListContainer();
+
   }
+
+  Future<void> initNotificationListContainer() async {
+
+
+
+    this._notiListContainer = await dbIns.getList();
+    print("getList done : ${this._notiListContainer.length}");
+
+    return Future.value(1);
+  }
+
+  Future<void> setNotiListContainer() async {
+
+    await dbIns.setList(this._notiListContainer);
+
+    return Future<void>.value();
+  }
+
+  List<MessageModel> get notiListContainer => this._notiListContainer;
 
   addList(Map<String,dynamic> message){
     print("하나 추가");

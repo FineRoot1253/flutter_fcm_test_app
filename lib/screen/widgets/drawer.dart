@@ -3,7 +3,6 @@ import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/notification_drawer_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-// import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:get/get.dart';
 
 class NotificationDrawer extends StatelessWidget {
