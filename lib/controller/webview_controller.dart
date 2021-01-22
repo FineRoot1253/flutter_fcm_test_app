@@ -5,6 +5,7 @@ import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
@@ -109,9 +110,14 @@ class WebViewController extends GetxController {
   Future onSelectNotification(String payload) async {
 
     print("셀렉트");
+
+
     try{
       MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
+
+      await wvcApiInstance.flnApiInstance.flnPlugin.cancel(msg.msgTypeToInt);
       if(wvcApiInstance.flnApiInstance.notiListContainer.isNotEmpty) {
+
         wvcApiInstance.flnApiInstance.listRemoveProc(msg);
         wvcApiInstance.flnApiInstance.msgStrCnt.add("remove");
         print("온 셀렉트 : ${wvcApiInstance.flnApiInstance.notiListContainer.length}");

@@ -158,9 +158,12 @@ class FLNApi {
     this.msgStrCnt.add("remove");
   }
 
-  clearNotifications(){
+  Future<void> clearNotifications() async {
     this.notiListContainer.clear();
+    this.dbIns.clearBox();
     this.msgStrCnt.add("clear");
+
+    return Future<void>.value();
   }
 
   Future<bool> _requestPermission() async {

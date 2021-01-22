@@ -52,8 +52,10 @@ class NotificationDrawerController extends GetxController{
     wvcApiInstance.flnApiInstance.removeLastNotification();
   }
 
-  clearNotificaitons(){
-    wvcApiInstance.flnApiInstance.clearNotifications();
+  Future<void> clearNotificaitons() async {
+    await wvcApiInstance.flnApiInstance.clearNotifications();
+
+    return Future<void>.value();
   }
 
   onTileTab(MessageModel model) async {

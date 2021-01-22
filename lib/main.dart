@@ -155,6 +155,8 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
         total: flnApiInstance.notiListContainer.length,
         lines: flnApiInstance.getLines());
 
+  await daoIns.closeBox();
+
   return Future<void>.value();
 }
 

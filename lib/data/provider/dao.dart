@@ -47,4 +47,9 @@ class DAOApi{
     return Future<void>.value();
   }
 
+  Future<void> clearBox() async {
+    await _box.clear();
+    return Future<void>.value();
+  }
+
 }

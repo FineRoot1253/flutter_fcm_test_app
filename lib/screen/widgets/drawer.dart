@@ -24,7 +24,7 @@ class NotificationDrawer extends StatelessWidget {
                       IconButton(
                         icon: Icon(Icons.restore_from_trash),
                         onPressed: () async {
-                          _.clearNotificaitons();
+                          await _.clearNotificaitons();
                           await _.wvcApiInstance.flnApiInstance.flnPlugin.cancelAll();
                           // FlutterAppBadger.removeBadge();
                         },
