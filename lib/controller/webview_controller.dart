@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
+import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
@@ -30,9 +31,8 @@ class WebViewController extends GetxController {
 
   /// Error 체크 변수
   bool isError = false;
+  bool _isInited = false;
 
-  /// 웹뷰 옵션
-  InAppWebViewGroupOptions webViewGroupOptions;
 
   /// login temp userform
   Map<dynamic, dynamic> tempUserForm = Map<dynamic, dynamic>();
@@ -55,62 +55,27 @@ class WebViewController extends GetxController {
   initNotifications() async {
     try{ /// TODO : WVCApi에 정의한 init들을 여기서 선언 할 것
       /// FLN + FCM + AJAX init START
+      if(this._isInited)  return Future.value(1);
+
       await wvcApiInstance.fcmInit();
       await wvcApiInstance.flnInit(onSelectNotification);
       wvcApiInstance.ajaxInit();
       /// FLN + FCM + init END
 
-      /// WebViewGroupOptions init START /////////////////////////////////////////
-      webViewGroupOptions = InAppWebViewGroupOptions(
-          android: AndroidInAppWebViewOptions(
-              supportMultipleWindows: true
-          ),
-          crossPlatform: InAppWebViewOptions(
-            horizontalScrollBarEnabled: false,
-            verticalScrollBarEnabled: false,
-            javaScriptCanOpenWindowsAutomatically: true,
-            clearCache: true,
-            debuggingEnabled: true,
-            useShouldOverrideUrlLoading: true,
-            useShouldInterceptAjaxRequest: true,
-            useOnLoadResource: true,
-          )
-      );
-      /// WebViewGroupOptions init END ///////////////////////////////////////////
-
       print("초기화 완료");
-
+      this._isInited = true;
       return Future.value(1);
     }catch(e ,s){
       print(e);
       print(s);
     }
   }
-  /// 웹뷰 옵션 설정
-  webViewGroupOptionSetter(bool isSignin){
-    webViewGroupOptions=InAppWebViewGroupOptions(
-        android: AndroidInAppWebViewOptions(
-            supportMultipleWindows: true
-        ),
-        crossPlatform: InAppWebViewOptions(
-          horizontalScrollBarEnabled: false,
-          verticalScrollBarEnabled: false,
-          javaScriptCanOpenWindowsAutomatically: true,
-          clearCache: true,
-          debuggingEnabled: true,
-          useShouldOverrideUrlLoading: true,
-          useShouldInterceptAjaxRequest: isSignin,
-          useOnLoadResource: true,
-        )
-    );
-  }
-
 
   /// payload 체크용
   Future onSelectNotification(String payload) async {
 
     print("셀렉트");
-
+    print(payload);
 
     try{
       MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
@@ -149,18 +114,25 @@ class WebViewController extends GetxController {
   _checkSignin(String currentURL) async {
     ///로그인이후 결과인지 체크, 맞으면 로그인환영 스낵바 호출
     ///&&this.progress==-1 && !ssItem.isNull
-    if (!wvcApiInstance.ssItem.isNull && !isSignin) {
-      wvcApiInstance.flnApiInstance.showLoginNotification();
-      isSignin = true;
-      ScreenHolderController.to.toggle=isSignin;
-    }
+    try{
+      print(
+          "ssitem : ${!wvcApiInstance.ssItem.isNull}, isSignin : ${!(isSignin)} ");
+      if (!wvcApiInstance.ssItem.isNull && !isSignin) {
+        wvcApiInstance.flnApiInstance.showLoginNotification();
+        isSignin = true;
+        ScreenHolderController.to.toggle = isSignin;
+      }
 
-    ///로그아웃하는 중인지 체크, 로그아웃하는 url이면 로그아웃절차 시작
-    ///!ssItem.isNull, 로그인상태 여부 체크
-    if (currentURL.endsWith("/login") && isSignin) {
-      wvcApiInstance.ssItem = null;
-      isSignin = false;
-      ScreenHolderController.to.toggle=isSignin;
+      ///로그아웃하는 중인지 체크, 로그아웃하는 url이면 로그아웃절차 시작
+      ///!ssItem.isNull, 로그인상태 여부 체크
+      if (currentURL.endsWith("/login") && isSignin) {
+        wvcApiInstance.ssItem = null;
+        isSignin = false;
+        ScreenHolderController.to.toggle = isSignin;
+      }
+    }catch(e,s){
+      print(e);
+      print(s);
     }
   }
 
@@ -178,7 +150,7 @@ class WebViewController extends GetxController {
       console.log(document.getElementById("taxAgentKey").value + " : " + document.getElementById("taxAgentUserId").value);
       form.target = "_blank";
       form.method = "post";
-      form.action = "/bizbooks_test/m/main";
+      form.action = "/m/taxagent/m/main";
       form.taxAgentKey.value = document.getElementById('taxAgentKey').value;
       form.submit();
             }catch(e){
@@ -207,28 +179,45 @@ class WebViewController extends GetxController {
   }
 
   autoLoginProc() async {
-    String autoLoginProcSource = """
+    try{
+      print("자동로그인 체크");
+      String autoLoginProcSource = """
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "$TOKEN_LOGIN_URL", true);
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=${wvcApiInstance.deviceToken}");
        """;
 
-    await wvcApiInstance.webViewPages.first.viewModel.webViewController.evaluateJavascript(source: autoLoginProcSource);
-    await wvcApiInstance.ajaxApiInstance.ajaxCompleter.future;// ajax 결과 나온 상태
-    wvcApiInstance.ssItem = await SessionStorage(wvcApiInstance.webViewPages.first.viewModel.webViewController).getItem(key: "loginUserForm");
-    if(wvcApiInstance.ssItem!=null){
-      wvcApiInstance.procType = wvcApiInstance.ssItem["procType"].toString();
-      await wvcApiInstance.webViewPages.first.viewModel.webViewController.loadUrl(url: MAIN_URL+ ((wvcApiInstance.ssItem["procType"]==2 ) ? MAIN_URL_LIST[0] : MAIN_URL_LIST[1]));
+      await wvcApiInstance.webViewPages.first.viewModel.webViewController
+          .evaluateJavascript(source: autoLoginProcSource);
+      await wvcApiInstance
+          .ajaxApiInstance.ajaxCompleter.future; // ajax 결과 나온 상태
+      wvcApiInstance.ssItem = await SessionStorage(
+              wvcApiInstance.webViewPages.first.viewModel.webViewController)
+          .getItem(key: "loginUserForm");
+      if (wvcApiInstance.ssItem != null) {
+        wvcApiInstance.procType = wvcApiInstance.ssItem["procType"].toString();
+        await wvcApiInstance.webViewPages.first.viewModel.webViewController
+            .loadUrl(
+                url: MAIN_URL +
+                    ((wvcApiInstance.ssItem["procType"] == 2)
+                        ? MAIN_URL_LIST[0]
+                        : MAIN_URL_LIST[1]));
+      }
+      await checkSignin(await wvcApiInstance
+          .webViewPages.first.viewModel.webViewController
+          .getUrl());
+    }catch(e,s){
+      print(e);
+      print(s);
     }
-    await checkSignin(await wvcApiInstance.webViewPages.first.viewModel.webViewController.getUrl());
   }
 
-  shouldWebViewOptionChange() async {
-    if(webViewGroupOptions.crossPlatform.useShouldInterceptAjaxRequest
+  shouldWebViewOptionChange(WebViewModel model) async {
+    if(model.options.crossPlatform.useShouldInterceptAjaxRequest
         &&wvcApiInstance.procType!="2"){
-      webViewGroupOptionSetter(false);
-      await wvcApiInstance.webViewPages.first.viewModel.webViewController.setOptions(options: webViewGroupOptions);
+      model.webViewGroupOptionSetter(false);
+      await wvcApiInstance.webViewPages.first.viewModel.webViewController.setOptions(options: model.options);
       await SessionStorage(wvcApiInstance.webViewPages.first.viewModel.webViewController).setItem(key: "loginUserForm", value: wvcApiInstance.ssItem).then((value) async {
         if (wvcApiInstance.receivedURL != null) {
           await wvcApiInstance.webViewPages.first.viewModel.webViewController
@@ -247,6 +236,7 @@ class WebViewController extends GetxController {
   /// TODO : Ajax 로직 여기로 이동 필요
   ajaxRequestInterceptProc(AjaxRequest ajaxRequest){
     String data = ajaxRequest.data;
+    print("ajax 납치 시작 : ${ajaxRequest.url}");
     switch (ajaxRequest.url) {
       case INIT_LOGIN_URL:
         if (!data.contains("procType")) ajaxRequest.data = data + "&devToken=${wvcApiInstance.deviceToken}";
@@ -268,6 +258,7 @@ class WebViewController extends GetxController {
 
   ajaxRequestInterceptResponseProc(AjaxRequest ajaxRequest) async {
     String res = ajaxRequest.responseText;
+    print("ajax 납치 끝 : ${ajaxRequest.url}");
     switch (ajaxRequest.url.toString()) {
       case TOKEN_LOGIN_URL:
         if (!res.isNullOrBlank) await SessionStorage(wvcApiInstance.webViewPages.first.viewModel.webViewController).setItem(key: "loginUserForm", value: jsonDecode(res));

@@ -78,6 +78,7 @@ class FLNApi {
       ]);
     _androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'fcm_default_channel', '비즈북스', '알람설정',
+        groupKey: "GROUP_KEY",
         color: Colors.blue.shade800,
         importance: Importance.max,
         channelShowBadge: true,
@@ -180,14 +181,60 @@ class FLNApi {
   showLoginNotification(){
     this._flnPlugin
         .show(3, "환영합니다", "비즈북스에 로그인하셨습니다.", this._platformChannelSpecifics);
-    this._flnPlugin
-        .cancel(3);
+    // this._flnPlugin
+    //     .cancel(3);
   }
 
   showNotification(){
     this._flnPlugin
         .show(int.tryParse(notiListContainer.last.msgType) ?? -1, notiListContainer.last.title, notiListContainer.last.body, this._platformChannelSpecifics,payload: jsonEncode(notiListContainer.last.toMap()));
+    if(this.groupSummaryValidate())
+      this.groupSummaryNotification();
   }
+
+  groupSummaryNotification() async {
+
+    String groupTitle = MESSAGE_TYPE_STR_LIST[notiListContainer.last.msgTypeToInt - 1];
+
+    var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'fcm_default_channel', '비즈북스', '알람설정',
+        setAsGroupSummary: true,
+        groupKey: "GROUP_KEY",
+        channelAction: AndroidNotificationChannelAction.update,
+        styleInformation: InboxStyleInformation(
+            List<String>.from(this.getLines().map((e) => e.msgType).toList()),
+            contentTitle: "$groupTitle 알림이 도착했습니다",
+            summaryText: '${notiListContainer.length}개의 안 읽은 알림'),
+        color: Colors.blue.shade800,
+        importance: Importance.max,
+        largeIcon: DrawableResourceAndroidBitmap("app_icon"),
+        priority: Priority.max,
+        actions: <AndroidNotificationAction>[
+          AndroidNotificationAction(
+            'id_1',
+            '확인',
+            icon: DrawableResourceAndroidBitmap('app_icon'),
+          ),
+          AndroidNotificationAction(
+            'id_2',
+            '닫기',
+            icon: DrawableResourceAndroidBitmap('app_icon'),
+          ),
+        ]);
+
+    await this.flnPlugin.show(
+        0,
+        groupTitle ?? "group noti title",
+        "$groupTitle 관련 알림이 도착해있습니다" ?? "group noti body",
+        NotificationDetails(
+            android: _androidPlatformChannelSpecifics,
+            iOS: IOSNotificationDetails()),
+        payload: jsonEncode(notiListContainer.last.toMap()));
+    print("printDone");
+  }
+
+  groupSummaryValidate() => notiListContainer.length > 1 && notiListContainer.map((e) => e.msgType).toSet().toList().length > 1;
+
 
   listRemoveProc(MessageModel msg){
     notiListContainer.removeWhere((element) => element.receivedDate==msg.receivedDate&&element.msgType==msg.msgType);

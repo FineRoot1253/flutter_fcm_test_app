@@ -88,9 +88,6 @@ groupSummaryNotification(
   print("printDone");
 }
 
-Future<dynamic> testBackgroundMessageHandler(
-    Map<String, dynamic> message) async {}
-
 /// TOP_Level BackgroundMessageHandler
 /// isolate domain
 Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
@@ -148,10 +145,10 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
   if (lastOne != null && lastOne.msgType != model.msgType)
     await groupSummaryNotification(model,
-        summaryText: "${MESSAGE_TYPE_LIST[model.msgTypeToInt - 1]} 알림이 도착했습니다",
-        groupTitle: MESSAGE_TYPE_LIST[model.msgTypeToInt - 1],
+        summaryText: "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 알림이 도착했습니다",
+        groupTitle: MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1],
         groupContent:
-            "${MESSAGE_TYPE_LIST[model.msgTypeToInt - 1]} 관련 알림이 도착해있습니다",
+            "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 관련 알림이 도착해있습니다",
         total: flnApiInstance.notiListContainer.length,
         lines: flnApiInstance.getLines());
 

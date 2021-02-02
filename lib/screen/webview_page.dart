@@ -18,8 +18,10 @@ import 'package:url_launcher/url_launcher.dart';
 class WebViewPage extends StatefulWidget {
   final screenHeight;
   final WebViewModel viewModel;
+  final GlobalKey<_WebViewPageState> key;
 
-  const WebViewPage({Key key, @required this.screenHeight, @required this.viewModel})
+
+  const WebViewPage({@required this.key, @required this.screenHeight, @required this.viewModel})
       : super(key: key);
 
   @override
@@ -49,6 +51,7 @@ class _WebViewPageState extends State<WebViewPage> {
     // TODO: implement dispose
     _controller.wvcApiInstance.ajaxApiInstance.streamController.close();
     _controller.wvcApiInstance.ajaxApiInstance.ajaxStreamSubScription.cancel();
+
     super.dispose();
   }
 
@@ -97,8 +100,9 @@ class _WebViewPageState extends State<WebViewPage> {
       ),
     );
   }
-
   buildWebView() {
+    print("윈도우 아이디 : ${model.windowId}");
+    print("초기화전 옵션 : ${this.model.options}");
     return InAppWebView(
       gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
         new Factory<OneSequenceGestureRecognizer>(
@@ -147,7 +151,7 @@ class _WebViewPageState extends State<WebViewPage> {
               /// 일반용 메인(대시보드)에서 ajaxoption false화
               await _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter
                   .future; // ssItem 업데이트까지 임시 대기
-              _controller.shouldWebViewOptionChange();
+              _controller.shouldWebViewOptionChange(model);
 
               ///일반용 리스트에서 initlogout
               await _controller.wvcApiInstance.initLogoutProc(
@@ -158,8 +162,6 @@ class _WebViewPageState extends State<WebViewPage> {
           print(s);
         }
       },
-
-      /// onloadStart, onLoadStop -> 자동로그인(토큰로그인)만 담당
       onLoadStart: (InAppWebViewController controller, String url) async {
         //URLLoad시작
         //시작시 현 컨트롤러 업데이트 & 세션스토리지 로드 + 업데이트 -> 로그인 체크 가능
@@ -201,14 +203,12 @@ class _WebViewPageState extends State<WebViewPage> {
               Get.back();
             }
           });
-          /// TODO 으엑 냄새
           Get.snackbar(
               "다운로드 완료", "'${(fileName.length>20)? fileName.substring(0,5)+"..."+fileName.substring(fileName.lastIndexOf(".")-3,fileName.length):fileName}'",
               mainButton: FlatButton(onPressed: () async {
                 File f = File(((await getExternalStorageDirectory()).path +
                     "/" +
                     fileName));
-
                 Uri _uri = Uri.file(f.path);
                 String url =
                     "/sdcard/Android/data/com.example.fcm_tet_01_1008/files/" +
@@ -220,8 +220,6 @@ class _WebViewPageState extends State<WebViewPage> {
           );
           _holderController.onFileurl();
         },
-
-      /// 전화번호 링크 체크 + 게시판 뒤로가기 오버로드 체크
       shouldOverrideUrlLoading:
           (controller, shouldOverrideUrlLoadingRequest) async {
         var url = shouldOverrideUrlLoadingRequest.url;
@@ -260,17 +258,10 @@ class _WebViewPageState extends State<WebViewPage> {
             _isCheckOut = true;
             _holderController.onFileurl();
           }
-
         }
-
         return ShouldOverrideUrlLoadingAction.ALLOW;
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
       },
-
-      /// 로그인 관련 ajaxRequest담당
-      /// 최초 로그인시 토큰 추가
-      /// 토큰 로그인(자동 로그인)시 세션 스토리지 set
-      /// TODO : 로그아웃은 삭제 필요
       shouldInterceptAjaxRequest:
           (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
         String data = ajaxRequest.data;
@@ -281,10 +272,6 @@ class _WebViewPageState extends State<WebViewPage> {
 
         return ajaxRequest;
       },
-
-      /// 로그인 ajaxRequest Result 로직
-      /// 최초 로그인시 ssItem 업데이트
-      /// 토큰 로그인(자동 로그인)시 세션 스토리지 업데이트
       onAjaxReadyStateChange:
           (InAppWebViewController controller, AjaxRequest ajaxRequest) async {
             model.webViewController =
@@ -297,19 +284,15 @@ class _WebViewPageState extends State<WebViewPage> {
 
         return AjaxRequestAction.PROCEED;
       },
-
-      /// 로그아웃 버튼 클릭 체크용
-      /// 로그아웃시 로그아웃 proc 호출
-      /// 로그아웃시 procType에 따라 웹뷰 재설정, ajaxoptions false -> true
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");
         if (consoleMessage.message == "logout") {
           if(pageList.length<1){
             await _controller.wvcApiInstance.logoutProc();
             if (_controller.wvcApiInstance.procType != "2") {
-              _controller.webViewGroupOptionSetter(true);
+              model.webViewGroupOptionSetter(true);
               await controller.setOptions(
-                  options: _controller.webViewGroupOptions);
+                  options: model.options);
             }
           }else{
             _holderController.onPressHomeBtn();

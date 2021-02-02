@@ -120,6 +120,7 @@ class WVCApi {
   }
 
   logoutProc() async {
+    print("로그아웃 체크");
     String autoLoginProcSource1 = """
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "$LOGOUT_URL");

@@ -13,32 +13,38 @@ class ScreenHolderController extends GetxController {
   final wvcApiInstance = WVCApi();
 
   GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
-  double screenHeight;
-  bool isSignin = false;
-  int currentIndex = 0;
-  AppLifecycleState state;
+  double _screenHeight;
+  bool _isSignin = false;
+  int _currentIndex = 0;
+  AppLifecycleState _state;
+  WebViewModel _currentWVModel;
 
+  int get currentIndex => this._currentIndex;
+  AppLifecycleState get state => this._state;
+  bool get isSignin => this._isSignin;
+  double get screenHeight => this._screenHeight;
 
   set toggle(bool isSigin) {
-    this.isSignin = isSigin;
+    this._isSignin = isSigin;
     update();
   }
   set setIndexedStack(int index){
-    this.currentIndex=index;
+    this._currentIndex=index;
     update();
   }
 
+  set screenHeight(double screenHeight){this._screenHeight=screenHeight;}
 
 
   void changeWebViewModel(WebViewModel model){
-    wvcApiInstance.addWebViewPage(WebViewPage(screenHeight: screenHeight, viewModel: model));
-    setIndexedStack=currentIndex+1;
+    wvcApiInstance.addWebViewPage(WebViewPage(key: GlobalKey(), screenHeight: _screenHeight, viewModel: model));
+    setIndexedStack=_currentIndex+1;
   }
 
   void onPressHomeBtn() async {
     if (wvcApiInstance.procType != "2") {
-      await WebViewController.to.webViewGroupOptionSetter(true);
-      await wvcApiInstance.webViewPages[0].viewModel.webViewController.setOptions(options: WebViewController.to.webViewGroupOptions);
+      await wvcApiInstance.webViewPages[0].viewModel.webViewGroupOptionSetter(true);
+      await wvcApiInstance.webViewPages[0].viewModel.webViewController.setOptions(options: wvcApiInstance.webViewPages[0].viewModel.options);
       await wvcApiInstance.webViewPages[0].viewModel.webViewController.loadUrl(
           url: MAIN_URL + MAIN_URL_LIST[1]);
       // await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+MAIN_URL_LIST[1]);
