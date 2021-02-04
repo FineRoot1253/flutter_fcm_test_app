@@ -15,7 +15,6 @@ class NotificationDrawerController extends GetxController{
   List<MessageModel> mainNotiList = List<MessageModel>();
   List<MessageModel> fileNotiList = List<MessageModel>();
   List<MessageModel> boardNotiList = List<MessageModel>();
-  // SendPort sendPort = ;
 
   NotificationDrawerController(){
     onInitiate();
@@ -37,7 +36,6 @@ class NotificationDrawerController extends GetxController{
     fileNotiList = wvcApiInstance.flnApiInstance.notiListContainer.where((element) => element.msgType=="2").toList();
     if(event!='reset')
       await wvcApiInstance.daoIns.setList(wvcApiInstance.flnApiInstance.notiListContainer);
-    // wvcApiInstance.sendToIsolate();
   }
 
   addList(Map<String,dynamic> message){
@@ -66,7 +64,6 @@ class NotificationDrawerController extends GetxController{
     if(ScreenHolderController.to.currentIndex==1) ScreenHolderController.to.onPressHomeBtn();
     if(wvcApiInstance.ssItem!=null&&wvcApiInstance.ssItem["procType"]!=2) {
       if(wvcApiInstance.ssItem["user"]["userId"]==wvcApiInstance.compUserId) {
-        print("여기여기");
         await wvcApiInstance.webViewPages.first.viewModel.webViewController.loadUrl(url: (wvcApiInstance.receivedURL.endsWith("/smb00004")) ? FILE_STORAGE_URL : BOARD_URL);
         wvcApiInstance.receivedURL = null;
         wvcApiInstance.compCd = null;

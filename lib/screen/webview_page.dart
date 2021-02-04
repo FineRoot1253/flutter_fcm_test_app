@@ -84,7 +84,6 @@ class _WebViewPageState extends State<WebViewPage> {
                 child: FutureBuilder(
                   future: result,
                   builder: (context, snapshot) {
-
                     if (snapshot.data != null)
                       return buildWebView();
                     else if (snapshot.hasError)
@@ -101,8 +100,6 @@ class _WebViewPageState extends State<WebViewPage> {
     );
   }
   buildWebView() {
-    print("윈도우 아이디 : ${model.windowId}");
-    print("초기화전 옵션 : ${this.model.options}");
     return InAppWebView(
       gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>[
         new Factory<OneSequenceGestureRecognizer>(
@@ -149,9 +146,8 @@ class _WebViewPageState extends State<WebViewPage> {
             if (currentUrl.contains(MAIN_URL_LIST[1])) {
 
               /// 일반용 메인(대시보드)에서 ajaxoption false화
-              await _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter
-                  .future; // ssItem 업데이트까지 임시 대기
-              _controller.shouldWebViewOptionChange(model);
+              await _controller.wvcApiInstance.ajaxApiInstance.ajaxCompleter.future; // ssItem 업데이트까지 임시 대기
+              await _controller.shouldWebViewOptionChange(model);
 
               ///일반용 리스트에서 initlogout
               await _controller.wvcApiInstance.initLogoutProc(
@@ -161,15 +157,6 @@ class _WebViewPageState extends State<WebViewPage> {
           print(e);
           print(s);
         }
-      },
-      onLoadStart: (InAppWebViewController controller, String url) async {
-        //URLLoad시작
-        //시작시 현 컨트롤러 업데이트 & 세션스토리지 로드 + 업데이트 -> 로그인 체크 가능
-        model.webViewController =
-            controller;
-        if (url.endsWith("/login")) ScreenHolderController.to.onPressHomeBtn();
-
-        //최초 로그인시 다이얼로그 호출
       },
       onLoadStop: (InAppWebViewController controller, String url) async {
         model.webViewController =
@@ -287,15 +274,16 @@ class _WebViewPageState extends State<WebViewPage> {
       onConsoleMessage: (controller, consoleMessage) async {
         print("콘솔 로그 : ${consoleMessage.message}");
         if (consoleMessage.message == "logout") {
-          if(pageList.length<1){
-            await _controller.wvcApiInstance.logoutProc();
+          await _controller.wvcApiInstance.logoutProc();
+          print(pageList.length);
+          if(pageList.length>1){
+            _holderController.onPressHomeBtn();
+          }else{
             if (_controller.wvcApiInstance.procType != "2") {
               model.webViewGroupOptionSetter(true);
               await controller.setOptions(
                   options: model.options);
             }
-          }else{
-            _holderController.onPressHomeBtn();
           }
         }
       },

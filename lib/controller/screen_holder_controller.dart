@@ -17,7 +17,6 @@ class ScreenHolderController extends GetxController {
   bool _isSignin = false;
   int _currentIndex = 0;
   AppLifecycleState _state;
-  WebViewModel _currentWVModel;
 
   int get currentIndex => this._currentIndex;
   AppLifecycleState get state => this._state;
@@ -47,7 +46,6 @@ class ScreenHolderController extends GetxController {
       await wvcApiInstance.webViewPages[0].viewModel.webViewController.setOptions(options: wvcApiInstance.webViewPages[0].viewModel.options);
       await wvcApiInstance.webViewPages[0].viewModel.webViewController.loadUrl(
           url: MAIN_URL + MAIN_URL_LIST[1]);
-      // await wvcApiInstance.mainWebViewModel.webViewController.loadUrl(url: MAIN_URL+MAIN_URL_LIST[1]);
       return;
     }
 

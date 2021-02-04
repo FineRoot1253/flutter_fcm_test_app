@@ -178,11 +178,13 @@ class FLNApi {
     );
   }
 
-  showLoginNotification(){
+  showLoginNotification() async {
     this._flnPlugin
         .show(3, "환영합니다", "비즈북스에 로그인하셨습니다.", this._platformChannelSpecifics);
-    // this._flnPlugin
-    //     .cancel(3);
+    Future.delayed(Duration(seconds: 3)).then((value) {
+      this._flnPlugin.cancel(3);
+    });
+
   }
 
   showNotification(){

@@ -6,7 +6,6 @@ import 'package:fcm_tet_01_1008/data/model/web_view_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/screen/widgets/snackbars.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 
@@ -75,7 +74,6 @@ class WebViewController extends GetxController {
   Future onSelectNotification(String payload) async {
 
     print("셀렉트");
-    print(payload);
 
     try{
       MessageModel msg = MessageModel.fromJson(Map<String,dynamic>.from(jsonDecode(payload)));
@@ -180,18 +178,20 @@ class WebViewController extends GetxController {
 
   autoLoginProc() async {
     try{
-      print("자동로그인 체크");
       String autoLoginProcSource = """
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "$TOKEN_LOGIN_URL", true);
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=${wvcApiInstance.deviceToken}");
        """;
-
       await wvcApiInstance.webViewPages.first.viewModel.webViewController
           .evaluateJavascript(source: autoLoginProcSource);
+
       await wvcApiInstance
           .ajaxApiInstance.ajaxCompleter.future; // ajax 결과 나온 상태
+      print("오토로그인 종료");
+
+
       wvcApiInstance.ssItem = await SessionStorage(
               wvcApiInstance.webViewPages.first.viewModel.webViewController)
           .getItem(key: "loginUserForm");
@@ -227,7 +227,6 @@ class WebViewController extends GetxController {
                   ? BOARD_URL
                   : FILE_STORAGE_URL);
           wvcApiInstance.receivedURL = null;
-          print("돌아야지");
         }
       });
       ///일반용 리로드 여부 체크 (푸시 알람 터치후 로그인 후 온 상태인지 여부)
@@ -245,7 +244,7 @@ class WebViewController extends GetxController {
       case TOKEN_LOGIN_URL:
         if(!isError) {
           autoLoginDialog();
-          addAjaxCompleter(ajaxRequest);
+          // addAjaxCompleter(ajaxRequest);
         }
         break;
       case LOGOUT_URL:
@@ -261,8 +260,12 @@ class WebViewController extends GetxController {
     print("ajax 납치 끝 : ${ajaxRequest.url}");
     switch (ajaxRequest.url.toString()) {
       case TOKEN_LOGIN_URL:
-        if (!res.isNullOrBlank) await SessionStorage(wvcApiInstance.webViewPages.first.viewModel.webViewController).setItem(key: "loginUserForm", value: jsonDecode(res));
-        wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest; //스트림 종료
+          print("토큰 로그인 결과 : $res");
+          if (!res.isNullOrBlank)
+            await SessionStorage(wvcApiInstance
+                    .webViewPages.first.viewModel.webViewController)
+                .setItem(key: "loginUserForm", value: jsonDecode(res));
+          wvcApiInstance.ajaxApiInstance.ajaxLoadDone = ajaxRequest;
         Get.back();
         break;
       case INIT_LOGIN_URL:
@@ -287,7 +290,9 @@ class WebViewController extends GetxController {
   }
 
   addAjaxCompleter(AjaxRequest ajaxRequest){
+    print("AJAX 끝내기!!!!");
     wvcApiInstance.ajaxApiInstance.streamController.add(ajaxRequest);
+    print("added!!!!!!!");
     wvcApiInstance.ajaxApiInstance.ajaxCompleter = Completer();
   }
 

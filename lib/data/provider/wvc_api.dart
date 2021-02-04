@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:fcm_tet_01_1008/controller/screen_holder_controller.dart';
+import 'package:fcm_tet_01_1008/controller/webview_controller.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
 import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
@@ -42,8 +43,6 @@ class WVCApi {
 
   /// 유저의 로그인 타입
   String procType;
-
-  Box _box;
 
   /// 세션 스토리지의 내용이 들어가는 링크드해쉬맵, 쉬운 접근을 위해 여기에 선언
   LinkedHashMap<String, dynamic> ssItem;
@@ -98,6 +97,7 @@ class WVCApi {
 
   /// AJAX eventHandler
   void _ajaxEventHandler(AjaxRequest req) {
+    print(req.readyState);
     if (req.readyState == AjaxRequestReadyState.DONE)
       ajaxApiInstance.ajaxCompleter.complete(req.readyState);
   }
@@ -120,27 +120,28 @@ class WVCApi {
   }
 
   logoutProc() async {
-    print("로그아웃 체크");
-    String autoLoginProcSource1 = """
+    String logoutProcSource = """
       var xhttp = new XMLHttpRequest();
       xhttp.open("POST", "$LOGOUT_URL");
       xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
       xhttp.send("devToken=$deviceToken");
        """;
-    if (ScreenHolderController.to.currentIndex == 0)
+
+    print(ScreenHolderController.to.currentIndex);
+    if (ScreenHolderController.to.currentIndex == 0) {
       await this
           ._webViewPages
           .first
           .viewModel
           .webViewController
-          .evaluateJavascript(source: autoLoginProcSource1);
-    else {
+          .evaluateJavascript(source: logoutProcSource);
+    } else {
       await this
           ._webViewPages
           .last
           .viewModel
           .webViewController
-          .evaluateJavascript(source: autoLoginProcSource1);
+          .evaluateJavascript(source: logoutProcSource);
       ScreenHolderController.to.onPressHomeBtn();
     }
 
@@ -148,7 +149,7 @@ class WVCApi {
   }
 
   initLogoutProc(String btnId) async {
-    String autoLoginProcSource2 = """
+    String addLogoutListenerSource = """
       var logoutBtn = document.getElementById('$btnId');
       logoutBtn.addEventListener("click", function (){
       console.log("logout");
@@ -161,13 +162,13 @@ class WVCApi {
             .first
             .viewModel
             .webViewController
-            .evaluateJavascript(source: autoLoginProcSource2)
+            .evaluateJavascript(source: addLogoutListenerSource)
         : await this
             ._webViewPages
             .last
             .viewModel
             .webViewController
-            .evaluateJavascript(source: autoLoginProcSource2);
+            .evaluateJavascript(source: addLogoutListenerSource);
 
     await ajaxApiInstance.ajaxCompleter.future;
   }

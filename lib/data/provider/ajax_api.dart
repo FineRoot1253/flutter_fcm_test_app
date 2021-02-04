@@ -31,6 +31,7 @@ class AJAXApi {
 
   /// 스트림 발생용 setter
   set ajaxLoadDone(AjaxRequest val){
+    print("AJAX 끝내기!!!!");
     streamController.add(val);
   }
 
