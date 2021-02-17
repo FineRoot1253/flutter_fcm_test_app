@@ -6,6 +6,8 @@ import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:fcm_tet_01_1008/routes/routes.dart';
 import 'package:fcm_tet_01_1008/screen/screen_holder.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -18,6 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       home: ScreenHolder(),
       getPages: routes,
@@ -34,13 +37,15 @@ void main() async {
   await FlutterDownloader.initialize(debug: true);
 
   await Permission.storage.request();
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(myBackgroundMessageHandler);
 
   runApp(MyApp());
-}
-
-void onPressNotificationAction(Map<String, dynamic> record) async {
 
 }
+
+void onPressNotificationAction(Map<String, dynamic> record) async {}
 
 groupSummaryNotification(
   model, {
@@ -90,10 +95,10 @@ groupSummaryNotification(
 
 /// TOP_Level BackgroundMessageHandler
 /// isolate domain
-Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
-
+Future<dynamic> myBackgroundMessageHandler(RemoteMessage message) async {
   final flnApiInstance = FLNApi();
   final daoIns = DAOApi();
+  await Firebase.initializeApp();
 
   await flnApiInstance.initFLN();
 
@@ -103,7 +108,7 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   if (flnApiInstance.notiListContainer.length > 0)
     lastOne = flnApiInstance.notiListContainer.last;
 
-  flnApiInstance.addList(message);
+  flnApiInstance.addList(message.data);
 
   await daoIns.setList(flnApiInstance.notiListContainer);
   await flnApiInstance.initNotificationListContainer();
@@ -145,7 +150,8 @@ Future<dynamic> myBackgroundMessageHandler(dynamic message) async {
   /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
   if (lastOne != null && lastOne.msgType != model.msgType)
     await groupSummaryNotification(model,
-        summaryText: "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 알림이 도착했습니다",
+        summaryText:
+            "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 알림이 도착했습니다",
         groupTitle: MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1],
         groupContent:
             "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 관련 알림이 도착해있습니다",

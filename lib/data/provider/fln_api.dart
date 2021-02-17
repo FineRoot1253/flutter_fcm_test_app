@@ -6,6 +6,7 @@ import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/group_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
 import 'package:intl/intl.dart';
 
 class FLNApi {
@@ -117,6 +118,7 @@ class FLNApi {
 
     this._notiListContainer = await dbIns.getList();
     print("getList done : ${this._notiListContainer.length}");
+    await FlutterStatusbarcolor.setStatusBarColor(Color(0xff008cff));
 
     return Future.value(1);
   }
@@ -134,13 +136,13 @@ class FLNApi {
     print("하나 추가");
 
     try{
-      this.notiListContainer.add(MessageModel(msgType: message["data"]["msgType"],
-          title: message["data"]["title"],
-          body: message["data"]["body"],
-          compCd: message["data"]["compCd"],
-          url: message["data"]["URL"],
-          userId: message["data"]["userId"],
-          compNm: message["data"]["compNm"],
+      this.notiListContainer.add(MessageModel(msgType: message["msgType"],
+          title: message["title"],
+          body: message["body"],
+          compCd: message["compCd"],
+          url: message["URL"],
+          userId: message["userId"],
+          compNm: message["compNm"],
           receivedDate: DateFormat("yyyy-MM-dd hh:mm:ss").format(DateTime.now())
       ));
       this.msgStrCnt.add("event!");

@@ -33,6 +33,7 @@ class _WebViewPageState extends State<WebViewPage> {
   WebViewController _controller = WebViewController.to;
   ScreenHolderController _holderController = ScreenHolderController.to;
   Future result;
+  double _totalHeight;
   bool _isCheckOut = false;
   WebViewModel model;
   List<WebViewPage> pageList;
@@ -43,6 +44,7 @@ class _WebViewPageState extends State<WebViewPage> {
     result = _controller.initNotifications();
     model = widget.viewModel;
     pageList = _controller.wvcApiInstance.webViewPages;
+    this._totalHeight = Get.height - (widget.screenHeight + ((Platform.isAndroid) ? Get.height * 0.05:Get.height * 0.1));
     super.initState();
   }
 
@@ -61,7 +63,7 @@ class _WebViewPageState extends State<WebViewPage> {
       reverse: true,
       physics: NeverScrollableScrollPhysics(),
       child: Container(
-        height: Get.height - (widget.screenHeight + Get.height * 0.05),
+        height: this._totalHeight,
         width: Get.width,
         child: Padding(
           padding:

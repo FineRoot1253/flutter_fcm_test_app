@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:hive/hive.dart';
@@ -18,7 +19,7 @@ class DAOApi{
 
   Future<void> init() async {
     if(!( _box !=null&&_box.isOpen)){
-      String path = (await getExternalStorageDirectory()).path;
+      String path = (Platform.isAndroid) ? (await getExternalStorageDirectory()).path : (await getApplicationDocumentsDirectory()).path;
       Hive.init(path);
       _box = await Hive.openBox('messageBox');
     }

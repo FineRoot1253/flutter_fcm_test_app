@@ -1,0 +1,1 @@
+const STATUS_BAR_COLOR = 0xff008cff;

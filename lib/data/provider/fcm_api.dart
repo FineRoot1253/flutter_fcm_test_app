@@ -1,24 +1,31 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FCMApi{
 
-  final FirebaseMessaging _fm = FirebaseMessaging();
-
+  final FirebaseMessaging _fm = FirebaseMessaging.instance;
   /// fcm에 접근시키기위한 변수
 
   FirebaseMessaging get fcmPlugin => _fm;
+  Stream<RemoteMessage> get onMessageStream => FirebaseMessaging.onMessage;
 
-  void fcmInitialize(){
-
-    //TODO: IOS를 위한 퍼미션, 현재 테스트 불가능 -> 맥OS 필요
-    _fm.requestNotificationPermissions(const IosNotificationSettings(
-        sound: true, badge: true, alert: true, provisional: true));
-
-    _fm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
-      print("Settings registered: $settings");
-    });
-    /// fm.subscribeToTopic()으로 미리 토픽을 fc쪽에 구독(등록)한다.
-    _fm.subscribeToTopic("ALL");
+  Future fcmInitialize() async {
+    await this._fm.setForegroundNotificationPresentationOptions(
+      alert: true, // Required to display a heads up notification
+      badge: true,
+      sound: true,
+    );
+    NotificationSettings settings = await this._fm.requestPermission(
+      alert: true,
+      announcement: true,
+      badge: true,
+      carPlay: false,
+      criticalAlert: true,
+      provisional: true,
+      sound: true,
+    );
+    print(settings.authorizationStatus.toString());
   }
 
 }

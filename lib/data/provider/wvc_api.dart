@@ -7,6 +7,7 @@ import 'package:fcm_tet_01_1008/data/provider/dao.dart';
 import 'package:fcm_tet_01_1008/keyword/url.dart';
 import 'package:fcm_tet_01_1008/main.dart';
 import 'package:fcm_tet_01_1008/screen/webview_page.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hive/hive.dart';
@@ -69,13 +70,9 @@ class WVCApi {
   }
 
   fcmInit() async {
-    fcmApiInstance.fcmPlugin.configure(
-      onLaunch: _onFCMReceived,
-      onResume: _onFCMReceived,
-      onMessage: _onMessageReceived,
-      onBackgroundMessage: myBackgroundMessageHandler,
-    );
-    fcmApiInstance.fcmInitialize();
+    await fcmApiInstance.fcmInitialize();
+
+    fcmApiInstance.onMessageStream.listen(_onMessageReceived);
 
     ///  로그인시 토큰 체크용
     await fcmApiInstance.fcmPlugin.getToken().then((String token) {
@@ -111,10 +108,10 @@ class WVCApi {
   /// 빌드시 미리 이 핸들러를 TOP_LEVEL에 정의 OR static화 해두어야 isolate된 BackGround에서 접근 가능
   /// 현재 background용 콜백은 main.dart에 정의됨
   /// foreground용 콜백
-  Future<dynamic> _onMessageReceived(Map<String, dynamic> message) async {
+  Future<dynamic> _onMessageReceived(RemoteMessage message) async {
     print("\n\n\nonMessage : $message\n\n\n");
     if (ScreenHolderController.to.state != AppLifecycleState.inactive)
-      flnApiInstance.addList(message);
+      flnApiInstance.addList(message.data);
 
     flnApiInstance.showNotification();
   }
