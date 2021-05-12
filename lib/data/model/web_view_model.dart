@@ -25,7 +25,7 @@ class WebViewModel {
     options = options ?? InAppWebViewGroupOptions(
         android: AndroidInAppWebViewOptions(
             supportMultipleWindows: true
-        ),
+        ),ios: IOSInAppWebViewOptions(sharedCookiesEnabled: true),
         crossPlatform: InAppWebViewOptions(
           horizontalScrollBarEnabled: false,
           verticalScrollBarEnabled: false,
@@ -48,7 +48,7 @@ class WebViewModel {
     this.options = InAppWebViewGroupOptions(
         android: AndroidInAppWebViewOptions(
             supportMultipleWindows: true
-        ),
+        ),ios: IOSInAppWebViewOptions(sharedCookiesEnabled: true),
         crossPlatform: InAppWebViewOptions(
           horizontalScrollBarEnabled: false,
           verticalScrollBarEnabled: false,

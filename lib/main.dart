@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fcm_tet_01_1008/data/model/message_model.dart';
 import 'package:fcm_tet_01_1008/data/provider/api.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:core';
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -29,8 +31,6 @@ class MyApp extends StatelessWidget {
 }
 
 void main() async {
-  /// 네이티브와 플러터를 바인드를 해줄때 initial 위치가 안맞는 경우가 있음,
-  /// 그럴땐 이것을 추가
   WidgetsFlutterBinding.ensureInitialized();
 
   /// 파일 다운로더 플러그인,  isolate로 동작, debug true시 console log print
@@ -47,6 +47,7 @@ void main() async {
 
 void onPressNotificationAction(Map<String, dynamic> record) async {}
 
+/// 그룹핑 메서드
 groupSummaryNotification(
   model, {
   String summaryText,
@@ -96,71 +97,36 @@ groupSummaryNotification(
 /// TOP_Level BackgroundMessageHandler
 /// isolate domain
 Future<dynamic> myBackgroundMessageHandler(RemoteMessage message) async {
-  final flnApiInstance = FLNApi();
-  final daoIns = DAOApi();
-  await Firebase.initializeApp();
+  try{
+    print("[백그라운드]메시지 도착 ${message.data.toString()}");
+    final flnApiInstance = FLNApi();
+    final daoIns = DAOApi();
+    await Firebase.initializeApp();
 
-  await flnApiInstance.initFLN();
+    await flnApiInstance.initFLN();
+    MessageModel lastOne;
+    MessageModel model;
 
-  MessageModel lastOne;
-  MessageModel model;
+    if (flnApiInstance.notiListContainer.length > 0)
+      lastOne = flnApiInstance.notiListContainer.last;
 
-  if (flnApiInstance.notiListContainer.length > 0)
-    lastOne = flnApiInstance.notiListContainer.last;
+    flnApiInstance.addList(message.data);
 
-  flnApiInstance.addList(message.data);
+    await daoIns.setList(flnApiInstance.notiListContainer);
+    await flnApiInstance.initNotificationListContainer();
+    model = flnApiInstance.notiListContainer.last;
 
-  await daoIns.setList(flnApiInstance.notiListContainer);
-  await flnApiInstance.initNotificationListContainer();
-  model = flnApiInstance.notiListContainer.last;
-  var _androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'fcm_default_channel', '비즈북스', '알람설정',
-      groupKey: "GROUP_KEY",
-      styleInformation: BigTextStyleInformation(model.body,
-          contentTitle: model.title, summaryText: model.title + " 알림"),
-      color: Colors.blue.shade800,
-      importance: Importance.max,
-      largeIcon: DrawableResourceAndroidBitmap("app_icon"),
-      priority: Priority.max,
-      actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          'id_1',
-          '확인',
-          icon: DrawableResourceAndroidBitmap('app_icon'),
-        ),
-        AndroidNotificationAction(
-          'id_2',
-          '닫기',
-          icon: DrawableResourceAndroidBitmap('app_icon'),
-        ),
-      ]);
-  var _iOSPlatformChannelSpecifics =
-      IOSNotificationDetails(categoryIdentifier: "demoIdentifier");
+    /// 앞서 선언, 초기화 한 토대로 notification을 띄움
+    await flnApiInstance.showNotification();
+    /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
 
-  var _platformChannelSpecifics = NotificationDetails(
-      android: _androidPlatformChannelSpecifics,
-      iOS: _iOSPlatformChannelSpecifics);
+    await daoIns.closeBox();
 
-  /// 앞서 선언, 초기화 한 토대로 notification을 띄움
-
-  await flnApiInstance.flnPlugin.show(
-      model.msgTypeToInt, model.title, model.body, _platformChannelSpecifics,
-      payload: jsonEncode(model.toMap()));
-
-  /// 날라온 fcm notification 메시지들을 그룹화 시켜서 띄워주는 메소드
-  if (lastOne != null && lastOne.msgType != model.msgType)
-    await groupSummaryNotification(model,
-        summaryText:
-            "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 알림이 도착했습니다",
-        groupTitle: MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1],
-        groupContent:
-            "${MESSAGE_TYPE_STR_LIST[model.msgTypeToInt - 1]} 관련 알림이 도착해있습니다",
-        total: flnApiInstance.notiListContainer.length,
-        lines: flnApiInstance.getLines());
-
-  await daoIns.closeBox();
-
-  return Future<void>.value();
+    return Future<void>.value();
+  }catch(e,s){
+    print(e);
+    print(s);
+  }
 }
 
 int getMsgLength(List<MessageModel> list, String msgType) =>

@@ -20,11 +20,13 @@ showToast(context){
   }
 }
 
-autoLoginDialog(){
-  return Get.defaultDialog(
-    barrierDismissible: false,
-    title: "로그인 체크...",
-    content :
-      CircularProgressIndicator()
-  );
-}
+// autoLoginDialog(){
+//   Get.snackbar(title, message)
+//   print("자동로그인 다이얼로그 오픈");
+//   return Get.defaultDialog(
+//     barrierDismissible: false,
+//     title: "로그인 체크...",
+//     content :
+//       CircularProgressIndicator()
+//   );
+// }

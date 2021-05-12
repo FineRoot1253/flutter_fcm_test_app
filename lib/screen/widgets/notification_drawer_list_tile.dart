@@ -73,19 +73,21 @@ class NotificationDrawerListTile extends StatelessWidget {
                     ? Image.asset("assets/images/board.png",
                     fit: BoxFit.fill, isAntiAlias: true)
                     : Padding(
-                      padding: const EdgeInsets.only(right: 2.0),
+                      padding: EdgeInsets.only(right: Get.width*0.001),
                       child: Image.asset("assets/images/file.png",
                       fit: BoxFit.fill, isAntiAlias: true),
                     )),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text(subStringStr(msg.compNm), style: TextStyle(fontSize: 10)),
-                  Text(subStringStr(msg.body), style: TextStyle(fontSize: 10)),
-                ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Text(subStringStr(msg.compNm), style: TextStyle(fontSize: 10,fontWeight: FontWeight.bold)),
+                    Text(subStringStr(msg.body), style: TextStyle(fontSize: 10)),
+                  ],
+                ),
               ),
             ),
             Text(splitDateString(), style: TextStyle(fontSize: 10))

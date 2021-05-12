@@ -163,6 +163,7 @@ class _WebViewPageState extends State<WebViewPage> {
       onLoadStop: (InAppWebViewController controller, String url) async {
         model.webViewController =
             controller;
+        print(url.endsWith("/m"));
         if (url.endsWith("/m")) await _controller.autoLoginProc();
         print("현재 main히스토리 로그 : ${ScreenHolderController.to.currentIndex} : ${await controller.getCopyBackForwardList()}");
         //리로드 + 체크용도
@@ -211,44 +212,44 @@ class _WebViewPageState extends State<WebViewPage> {
         },
       shouldOverrideUrlLoading:
           (controller, shouldOverrideUrlLoadingRequest) async {
-        var url = shouldOverrideUrlLoadingRequest.url;
-        var uri = Uri.parse(url);
-        print("오버로딩 체크 : $url");
-        if (["tel"].contains(uri.scheme)) {
-          if (await canLaunch(url)) await launch(url);
-          return ShouldOverrideUrlLoadingAction.CANCEL;
-        }
-        if (url.endsWith("/board/detail?no=undefined&bc=undefined"))
-          return ShouldOverrideUrlLoadingAction.CANCEL;
-        if (url.endsWith(".pdf")) {
-          var resultCheck = await Get.defaultDialog(
-            title: "파일",
-            content: Text("저장 하시겠습니까?"),
-            actions: <Widget>[
-              FlatButton(
-                  onPressed: () async {
-                    if (await canLaunch(url)) {
-                      _isCheckOut = true;
-                      await launch(url);
-                      ScreenHolderController.to.onFileurl();
-                      return Get.back(result: true);
-                    }
-                  },
-                  child: Text("보기")),
-              FlatButton(
-                  onPressed: () async {
-                    return Get.back(result: false);
-                    // Get.defaultDialog(title: "다운로드")
-                  },
-                  child: Text("저장"))
-            ],
-          );
-          if(resultCheck==null){
-            _isCheckOut = true;
-            _holderController.onFileurl();
+          var url = shouldOverrideUrlLoadingRequest.url;
+          var uri = Uri.parse(url);
+          print("오버로딩 체크 : $url");
+          if (["tel"].contains(uri.scheme)) {
+            if (await canLaunch(url)) await launch(url);
+            return ShouldOverrideUrlLoadingAction.CANCEL;
           }
-        }
-        return ShouldOverrideUrlLoadingAction.ALLOW;
+          if (url.endsWith("/board/detail?no=undefined&bc=undefined")) return ShouldOverrideUrlLoadingAction.CANCEL;
+          if (url.endsWith(".pdf")) {
+            var resultCheck = await Get.defaultDialog(
+              title: "파일",
+              content: Text("저장 하시겠습니까?"),
+              actions: <Widget>[
+                FlatButton(
+                    onPressed: () async {
+                      if (await canLaunch(url)) {
+                        _isCheckOut = true;
+                        await launch(url);
+                        ScreenHolderController.to.onFileurl();
+                        return Get.back(result: true);
+                      }
+                    },
+                    child: Text("보기")),
+                FlatButton(
+                    onPressed: () async {
+                      return Get.back(result: false);
+                      // Get.defaultDialog(title: "다운로드")
+                    },
+                    child: Text("저장"))
+              ],
+            );
+            if (resultCheck == null) {
+              _isCheckOut = true;
+              _holderController.onFileurl();
+            }
+          }
+          return ShouldOverrideUrlLoadingAction.ALLOW;
+
         // 만약 강제로 리다이렉트, 등등을 원할 경우 여기서 url 편집
       },
       shouldInterceptAjaxRequest:

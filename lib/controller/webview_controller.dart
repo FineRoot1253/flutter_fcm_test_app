@@ -243,7 +243,7 @@ class WebViewController extends GetxController {
         break;
       case TOKEN_LOGIN_URL:
         if(!isError) {
-          autoLoginDialog();
+          // autoLoginDialog();
           // addAjaxCompleter(ajaxRequest);
         }
         break;
@@ -260,7 +260,7 @@ class WebViewController extends GetxController {
     print("ajax 납치 끝 : ${ajaxRequest.url}");
     switch (ajaxRequest.url.toString()) {
       case TOKEN_LOGIN_URL:
-          print("토큰 로그인 결과 : $res");
+          print("토큰 로그인 결과 : $res,${!res.isNullOrBlank}");
           if (!res.isNullOrBlank)
             await SessionStorage(wvcApiInstance
                     .webViewPages.first.viewModel.webViewController)
